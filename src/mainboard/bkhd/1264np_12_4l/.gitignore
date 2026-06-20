@@ -1,0 +1,7 @@
+# Local research / reference material for this port - kept in-tree for
+# convenience while bringing the board up, but not part of the board source.
+*.pdf
+*.efi
+gpio.h.generated
+/original_bios/
+/bootlog/

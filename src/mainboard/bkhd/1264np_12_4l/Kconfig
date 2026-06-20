@@ -1,0 +1,50 @@
+## SPDX-License-Identifier: GPL-2.0-or-later
+
+if BOARD_BKHD_1264NP_12_4L
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select AZALIA_USE_LEGACY_VERB_TABLE
+	select BOARD_ROMSIZE_KB_16384
+	select DRIVERS_OPTION_CFR_ENABLED if PAYLOAD_EDK2 && SMMSTORE
+	select FSP_TYPE_IOT
+	select HAVE_ACPI_TABLES
+	select HAVE_ACPI_RESUME
+	select SUPERIO_ITE_IT8625E
+	select DRIVERS_UART_8250IO
+	select SOC_INTEL_ALDERLAKE_PCH_N
+	select INTEL_GMA_HAVE_VBT
+	select SOC_INTEL_COMMON_BLOCK_HDA_VERB
+	select HAVE_INTEL_PTT
+	select CRB_TPM
+	select MAINBOARD_HAS_TPM2
+	select MAINBOARD_HAS_LIBGFXINIT
+	select CONSOLE_FRAMEBUFFER
+
+config MAINBOARD_DIR
+	default "bkhd/1264np_12_4l"
+
+config MAINBOARD_VENDOR
+	default "BKHD"
+
+config INTEL_GMA_VBT_FILE
+	default "src/mainboard/bkhd/1264np_12_4l/data.vbt"
+
+config MAINBOARD_PART_NUMBER
+	default "1264NP-12-4L"
+
+config BEEP_ON_BOOT
+	bool "Beep (ascending chime) on successful boot"
+	default y
+	help
+	  Play a short ascending arpeggio over the front-panel piezo buzzer at
+	  the end of ramstage to signal a successful boot (handy in headless
+	  operation). The buzzer hangs off GPP_B14, which is the SATA activity
+	  LED at runtime; the beep routine briefly muxes it to the SPKR native
+	  function and restores it afterwards. This is the build-time default;
+	  the beep can also be toggled at runtime via the "Boot beep" CFR option.
+
+config CONSOLE_CBMEM_BUFFER_SIZE
+	default 0x100000	# 1 MiB - headroom for the verbose boot log + fbcon replay
+
+endif # BOARD_BKHD_1264NP_12_4L

@@ -1,0 +1,261 @@
+chip soc/intel/alderlake
+
+	# SaGv (dynamic DRAM frequency switching) can cause random memory
+	# corruption / segfaults on marginal RAM under varying load. Fixed at the
+	# top point removes the transitions while keeping full bandwidth. If
+	# instability persists, try SaGv_Disabled (more timing margin) or the RAM
+	# is faulty.
+	register "sagv" = "SaGv_FixedPoint3"
+	register "tcc_offset" = "10"
+
+	# Package power limits. The N100 SoC default is PL1=6W/PL2=7W; the stock
+	# AMI firmware runs the board at PL1=15W/PL2=20W. Match that as the board
+	# default (index ADL_N_041_6W_CORE = N100: 4 cores, 6W base TDP). Values
+	# are in watts. The "CPU PL1/PL2" CFR options override this when set.
+	register "power_limits_config[ADL_N_041_6W_CORE]" = "{
+		.tdp_pl1_override = 15,
+		.tdp_pl2_override = 20,
+	}"
+
+	# GPIO -> GPE0 dword routing. Must be three distinct groups, otherwise
+	# pmc_gpe_init() falls back to the (non-deterministic) FSP MISCCFG default.
+	# GPP_D and GPP_E carry our remaining GPI_SCI pads, so route them here.
+	register "pmc_gpe0_dw0" = "GPP_B"
+	register "pmc_gpe0_dw1" = "GPP_D"
+	register "pmc_gpe0_dw2" = "GPP_E"
+
+	device domain 0 on
+		device ref igpu on
+			# Desktop board: external HDMI + DP only, NO embedded panel.
+			# ddi_portX_config: 0=Disabled(no eDP), 1=eDP, 2=MIPI DSI.
+			# Previously 1 (eDP) on A+B (copied from topton) -> FSP drove the
+			# Port B combo PHY as a non-existent eDP panel -> GOP produced no
+			# framebuffer HOB ("Graphics hand-off block not found"). Confirmed
+			# from stock i915: HDMI-A-1 is on "gmbus dpb" = DDI_PORT_B.
+			register "ddi_portA_config" = "0"
+			register "ddi_portB_config" = "0"
+			# Physical outputs (per stock i915 DDC adapter names):
+			#   HDMI-A-1 -> DDI_PORT_B   (gmbus dpb)
+			#   DP-1     -> DDI_PORT_1   (USB-C / DDI TC1 / PHY TC1)
+			register "ddi_ports_config" = "{
+				[DDI_PORT_B] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+				[DDI_PORT_1] = DDI_ENABLE_HPD | DDI_ENABLE_DDC,
+			}"
+		end
+
+		device ref xhci on
+			# USB port map, empirically verified on the real bkhd hardware
+			# (lsusb -t + physical plug-test, 2026-06-19):
+			#   Front: 2x USB3 (each = a usb3 port + its usb2 companion) and
+			#          2x USB2-only; internal: M.2 slot (Quectel WWAN, USB2).
+			# OC pins stay OC_SKIP until the schematic confirms the OC routing.
+			register "usb2_ports" = "{
+				[0] = USB2_PORT_MID(OC_SKIP),	/* Front USB3 #1 - USB2 companion */
+				[1] = USB2_PORT_MID(OC_SKIP),	/* Front USB3 #2 - USB2 companion */
+				[2] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #1 */
+				[3] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #2 */
+				[4] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[5] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[6] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[7] = USB2_PORT_MID(OC_SKIP),	/* M.2 B-key - Quectel WWAN (internal) */
+				[8] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[9] = USB2_PORT_MID(OC_SKIP),	/* CNVi Bluetooth - M.2 E-key AX211/AX201 */
+			}"
+
+			register "usb3_ports" = "{
+				[0] = USB3_PORT_DEFAULT(OC_SKIP),	/* Front USB3 #1 */
+				[1] = USB3_PORT_DEFAULT(OC_SKIP),	/* Front USB3 #2 */
+				[2] = USB3_PORT_EMPTY,
+				[3] = USB3_PORT_EMPTY,
+				[4] = USB3_PORT_EMPTY,
+				[5] = USB3_PORT_EMPTY,
+				[6] = USB3_PORT_EMPTY,
+				[7] = USB3_PORT_EMPTY,
+			}"
+		end
+
+		device ref shared_sram on end
+
+		# Single SATA 3.0 connector (Data + PWR headers, per manual) on a
+		# SATA/PCIe combo lane = SATA port 1 (SATAXPCIE1 native function on
+		# GPP_A12, NF1 - see gpio.h, matches stock). Being a combo lane it is
+		# only implemented in AHCI when a SATA device is actually attached;
+		# with an empty port the lane falls back to PCIe and AHCI reports
+		# "0 ports implemented (port mask 0x0)" - that is expected, not a bug.
+		# Attach a drive to verify; the edk2 payload can then boot from it.
+		device ref sata on
+			register "sata_ports_enable" = "{
+				[1] = 1,
+			}"
+		end
+
+		# Built-in I226-V NICs
+		#
+		# Stock BIOS PCIe topology:
+		# 00:1c.0 Root Port #3  -> 01:00.0 I226-V
+		# 00:1c.3 Root Port #4  -> 02:00.0 I226-V
+		# 00:1c.6 Root Port #7  -> 03:00.0 I226-V
+		# 00:1d.0 Root Port #9  -> 04:00.0 I226-V
+		#
+		# CLKREQ assignment is a best first-pass mapping.
+		# If a NIC is missing later, clk_src/clk_req is the first thing to revisit.
+
+		device ref pcie_rp3 on
+			register "pch_pcie_rp[PCH_RP(3)]" = "{
+				.clk_src = 1,
+				.clk_req = 1,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_BUILT_IN,
+                                .pcie_rp_aspm = ASPM_DISABLE,
+                                .PcieRpL1Substates = L1_SS_DISABLED,
+			}"
+		end
+
+		device ref pcie_rp4 on
+			register "pch_pcie_rp[PCH_RP(4)]" = "{
+				.clk_src = 2,
+				.clk_req = 2,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_BUILT_IN,
+                                .pcie_rp_aspm = ASPM_DISABLE,
+                                .PcieRpL1Substates = L1_SS_DISABLED,
+			}"
+		end
+
+		device ref pcie_rp7 on
+			register "pch_pcie_rp[PCH_RP(7)]" = "{
+				.clk_src = 3,
+				.clk_req = 3,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_BUILT_IN,
+                                .pcie_rp_aspm = ASPM_DISABLE,
+                                .PcieRpL1Substates = L1_SS_DISABLED,
+			}"
+		end
+
+		device ref pcie_rp9 on
+			register "pch_pcie_rp[PCH_RP(9)]" = "{
+				.clk_src = 4,
+				.clk_req = 4,
+				.flags = PCIE_RP_CLK_REQ_DETECT | PCIE_RP_BUILT_IN,
+                                .pcie_rp_aspm = ASPM_DISABLE,
+                                .PcieRpL1Substates = L1_SS_DISABLED,
+			}"
+		end
+
+		# NVMe
+		#
+		# Stock BIOS:
+		# 00:1d.3 Root Port #12 -> 05:00.0 Micron 2550 NVMe
+		device ref pcie_rp12 on
+			register "pch_pcie_rp[PCH_RP(12)]" = "{
+				.clk_src = 0,
+				.clk_req = 0,
+				.flags = PCIE_RP_CLK_REQ_DETECT,
+		                .pcie_rp_aspm = ASPM_DISABLE,
+				.PcieRpL1Substates = L1_SS_DISABLED,
+			}"
+		end
+
+		# M.2 2230 E-key (WiFi/BT) slot. Per stock DSDT it is a combo slot:
+		#   - CNVi modules (Intel AX201/AX211) -> CNVio (no PCIe RP/clock)
+		#   - PCIe modules (e.g. AX210)        -> logical Root Port #1 (pcie_rp1)
+		# Left off until a module is available to validate. Note: all 5 ADL-N
+		# PCIe clock sources (0..4) are already used by the 4 NICs + NVMe, so a
+		# PCIe WiFi card on rp1 will need a shared/free-running clock; a CNVi
+		# card avoids that entirely. Enable the matching one when testing.
+		# M.2 2230 E-key WiFi/BT — CNVi slot (per stock DSDT, RP01.PXSX/CNVW).
+		# Enabled for Intel CNVi modules. NOTE: use an AX211 (or AX201) — the
+		# CNVi generation is locked, so older modules like the 9560 do NOT
+		# work on Alder Lake. A discrete PCIe WiFi card would instead need
+		# pcie_rp1 + a shared/free-running clock (all 5 SRCCLK are used by the
+		# NICs + NVMe), so CNVi (AX211) is the clean choice for this slot.
+		device ref cnvi_wifi on end
+
+		device ref pch_espi on
+			chip superio/ite/it8625e
+				# Environment Controller (HWM) setup, applied at boot by the
+				# ITE common env_ctrl driver. Enables all voltage rails plus
+				# the CPU/board temperature sensors and the CPU-fan
+				# SmartGuardian curve, so the values are monitored and exposed
+				# to the OS (lm-sensors it87). TMPIN1=CPU, TMPIN2=board (from
+				# the stock EC dump); FAN2 = CPU fan (J2G1), matching the
+				# sibling cwwk/adl board and the stock pwm2 channel.
+				register "ec.vin_mask"   = "VIN_ALL"
+				# Match the stock IT8625E config exactly: the stock superiotool
+				# EC dump has reg 0x51 = 0x03, i.e. TMPIN1 and TMPIN2 BOTH in
+				# thermal-diode mode (DIODE_MODE(1)|DIODE_MODE(2) = bit0|bit1).
+				# Under stock this reads CPU ~66-79C (tracks load) and board
+				# ~26C. (PECI/resistor were a wrong guess - they'd write 0x50.)
+				# TMPIN1 = CPU (read reg 0x29), TMPIN2 = board (0x2a).
+				register "TMPIN1.mode"   = "THERMAL_DIODE"	# CPU
+				register "TMPIN2.mode"   = "THERMAL_DIODE"	# board / ambient
+				register "TMPIN3.mode"   = "THERMAL_MODE_DISABLED"
+				# Diode beta/offset calibration. env_ctrl writes the offset
+				# register (TMPIN1=0x56, TMPIN2=0x57) for diode mode; without
+				# these it writes 0 and zeroes the stock calibration -> the
+				# diode reads garbage (-70/-128). Values are the stock dump's
+				# 0x56=0x68 / 0x57=0x60 (which read CPU ~66C / board ~26C).
+				register "TMPIN1.offset" = "0x68"
+				register "TMPIN2.offset" = "0x60"
+				register "FAN2.mode"           = "FAN_SMART_AUTOMATIC"	# CPU_FAN (J2G1)
+				register "FAN2.smart.tmpin"     = "1"	# regulate by CPU temp
+				register "FAN2.smart.tmp_off"   = "40"
+				register "FAN2.smart.tmp_start" = "50"
+				register "FAN2.smart.tmp_full"  = "85"
+				register "FAN2.smart.tmp_delta" = "2"
+				register "FAN2.smart.pwm_start" = "30"
+				register "FAN2.smart.slope"     = "12"
+				# Board only has the one CPU_FAN header (FAN2). Drive the two
+				# unused channels OFF so they don't float at the chip default
+				# (otherwise pwm1/pwm3 show up running in lm-sensors).
+				register "FAN1.mode"           = "FAN_MODE_OFF"
+				register "FAN3.mode"           = "FAN_MODE_OFF"
+				device pnp 2e.1 on	# serial console (COM1)
+					io 0x60 = 0x3f8
+					irq 0x70 = 0x4
+					irq 0xf0 = 0x1
+				end
+				device pnp 2e.2 on	# serial (COM2 header)
+					io 0x60 = 0x2f8
+					irq 0x70 = 0x3
+					irq 0xf0 = 0x1
+				end
+				device pnp 2e.4 on	# Environment Controller (HWM: temps/voltages)
+					# Sensors at 0xa20 per stock superiotool; 0x60 base
+					# mirrored from sibling AOOSTAR/CWWK ADL-N boards.
+					# Lets the Linux it87 hwmon driver read CPU/board temps.
+					io 0x60 = 0xa30
+					io 0x62 = 0xa20
+					irq 0x70 = 0x00
+				end
+				device pnp 2e.7 on	# GPIO (user header GPIO1-8)
+					# Simple I/O base 0xa00 (stock LDN7 reg 0x62);
+					# the Linux gpio-it87 driver reads the pins here.
+					# Pin routing/direction is set in bootblock.c.
+					io 0x60 = 0x0000	# GPIO base set (unused, stock 0)
+					io 0x62 = 0x0a00
+					io 0x64 = 0x0000	# unused (stock 0)
+					irq 0x70 = 0x00
+				end
+				# Unused IT8625E logical devices - declared off so coreboot
+				# stops logging their unassigned resources at boot.
+				device pnp 2e.3 off end	# parallel port (no LPT)
+				device pnp 2e.5 off end	# PS/2 keyboard (none)
+				device pnp 2e.6 off end	# PS/2 mouse (none)
+				device pnp 2e.8 off end	# consumer IR (none)
+			end
+		end
+
+		device ref smbus on end
+		device ref fast_spi on end
+
+		device ref hda on
+			register "pch_hda_audio_link_hda_enable"	= "true"
+			register "pch_hda_idisp_codec_enable"	= "true"
+			register "pch_hda_idisp_link_frequency"	= "HDA_LINKFREQ_96MHZ"
+			register "pch_hda_idisp_link_tmode"	= "HDA_TMODE_8T"
+		end
+
+		chip drivers/crb
+			device mmio 0xfed40000 on end
+		end
+	end
+end

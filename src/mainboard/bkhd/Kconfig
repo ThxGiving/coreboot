@@ -1,0 +1,8 @@
+## SPDX-License-Identifier: GPL-2.0-or-later
+
+if VENDOR_BKHD
+
+source "src/mainboard/bkhd/1264np_12_4l/Kconfig.name"
+source "src/mainboard/bkhd/1264np_12_4l/Kconfig"
+
+endif # VENDOR_BKHD

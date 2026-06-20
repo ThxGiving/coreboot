@@ -1,0 +1,4 @@
+## SPDX-License-Identifier: GPL-2.0-or-later
+
+config BOARD_BKHD_1264NP_12_4L
+	bool "1264NP-12-4L"
