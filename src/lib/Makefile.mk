@@ -150,6 +150,7 @@ ramstage-$(CONFIG_CONSOLE_CBMEM) += cbmem_console.c
 ramstage-$(CONFIG_BMP_LOGO) += bmp_logo.c
 ramstage-$(CONFIG_BMP_LOGO) += render_bmp.c
 ramstage-$(CONFIG_FRAMEBUFFER_SPLASH_TEXT) += render_text.c
+ramstage-$(CONFIG_CONSOLE_FRAMEBUFFER) += framebuffer_console.c
 ramstage-$(CONFIG_FONT_GOOGLE_SANS_FLEX_MEDIUM_24X32) += fonts/font_table_google_sans_flex_medium_24x32.c
 ramstage-$(CONFIG_BOOTSPLASH) += bootsplash.c
 ramstage-$(CONFIG_BOOTSPLASH) += jpeg.c

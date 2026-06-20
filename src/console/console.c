@@ -2,6 +2,7 @@
 
 #include <console/cbmem_console.h>
 #include <console/flash.h>
+#include <console/framebuffer.h>
 #include <console/i2c_smbus.h>
 #include <console/ne2k.h>
 #include <console/qemu_debugcon.h>
@@ -50,6 +51,7 @@ void console_interactive_tx_byte(unsigned char byte, void *data_unused)
 	__system76_ec_tx_byte(byte);
 	__i2c_smbus_console_tx_byte(byte);
 	__simnow_console_tx_byte(byte);
+	__fbcon_tx_byte(byte);
 }
 
 void console_stored_tx_byte(unsigned char byte, void *data_unused)

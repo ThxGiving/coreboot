@@ -156,6 +156,24 @@ void cbmemc_copy_in(void *buffer, size_t size)
 	copy_console_buffer(previous);
 }
 
+#if CONFIG(CONSOLE_FRAMEBUFFER)
+void cbmem_console_get(const uint8_t **body, uint32_t *size, uint32_t *cursor,
+		       int *overflow)
+{
+	if (!current_console) {
+		*body = NULL;
+		*size = 0;
+		*cursor = 0;
+		*overflow = 0;
+		return;
+	}
+	*body = current_console->body;
+	*size = current_console->size;
+	*cursor = current_console->cursor & CURSOR_MASK;
+	*overflow = (current_console->cursor & OVERFLOW) ? 1 : 0;
+}
+#endif
+
 static void cbmemc_reinit(int is_recovery)
 {
 	const size_t size = CONFIG_CONSOLE_CBMEM_BUFFER_SIZE;

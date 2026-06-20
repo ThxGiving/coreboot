@@ -313,16 +313,23 @@ config PLATFORM_OFF_MODE_CHARGING_INDICATOR_LOGO_SECONDARY_PATH
 endif # PLATFORM_HAS_SECONDARY_BOOT_INDICATOR_LOGO
 endif # PLATFORM_HAS_OFF_MODE_CHARGING_INDICATOR
 
+config FONT_SUPPORT
+	bool
+	help
+	  Selected by features that need the bitmap font table: splash-screen
+	  text rendering and the framebuffer console.
+
 config FRAMEBUFFER_SPLASH_TEXT
 	bool "Enable splash screen text"
 	default n
+	select FONT_SUPPORT
 	help
 	  Enable logic to render bitmapped text strings directly into
 	  the linear framebuffer during the splash screen stage. This
 	  method uses a bitmapped font table to display system
 	  status messages, such as battery charging levels.
 
-if FRAMEBUFFER_SPLASH_TEXT
+if FONT_SUPPORT
 
 choice
 	prompt "Font Selection"
@@ -351,7 +358,7 @@ config FONT_HEIGHT
 	help
 	  The height of the font canvas in pixels.
 
-endif # FRAMEBUFFER_SPLASH_TEXT
+endif # FONT_SUPPORT
 
 endmenu
 

@@ -268,6 +268,17 @@ config CONSOLE_CBMEM_PRINT_PRE_BOOTBLOCK_CONTENTS
 	  after the bootblock console is initialized.
 endif
 
+config CONSOLE_FRAMEBUFFER
+	bool "Framebuffer console output"
+	depends on HAVE_LINEAR_FRAMEBUFFER
+	select FONT_SUPPORT
+	select CONSOLE_CBMEM
+	help
+	  Render the coreboot console log onto the linear framebuffer once
+	  graphics have been initialised (ramstage). The buffered early log is
+	  replayed from the cbmem console, then characters are drawn live, and a
+	  thin boot progress bar is shown along the bottom edge of the screen.
+
 config CONSOLE_SPI_FLASH
 	bool "SPI Flash console output"
 	default n

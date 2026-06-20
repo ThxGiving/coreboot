@@ -32,4 +32,10 @@ void cbmem_dump_console(void);
 /* Retrieves the location of the CBMEM Console buffer in SMM mode */
 void smm_get_cbmemc_buffer(void **buffer_out, size_t *size_out);
 
+/* Read-only view of the active cbmem console ring buffer, for replaying the
+   buffered early log (used by the framebuffer console). Returns the raw body,
+   its size, the write cursor and whether the ring has wrapped. */
+void cbmem_console_get(const uint8_t **body, uint32_t *size, uint32_t *cursor,
+		       int *overflow);
+
 #endif // _CONSOLE_CBMEM_CONSOLE_H_
