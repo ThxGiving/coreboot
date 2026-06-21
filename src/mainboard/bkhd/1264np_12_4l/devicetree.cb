@@ -230,9 +230,13 @@ chip soc/intel/alderlake
 					# Simple I/O base 0xa00 (stock LDN7 reg 0x62);
 					# the Linux gpio-it87 driver reads the pins here.
 					# Pin routing/direction is set in bootblock.c.
-					io 0x60 = 0x0000	# GPIO base set (unused, stock 0)
+					# Only declare the GPIO base we actually use (PNP_IO1
+					# at 0x62). The chip's other two LDN7 bases (0x60/0x64)
+					# are unused; declaring them as io = 0 made coreboot try
+					# to open an LPC generic IO decode window at base 0
+					# ("LPC IO decode base 0!"). Leaving them undeclared keeps
+					# those resources unassigned, so the LPC code skips them.
 					io 0x62 = 0x0a00
-					io 0x64 = 0x0000	# unused (stock 0)
 					irq 0x70 = 0x00
 				end
 				# Unused IT8625E logical devices - declared off so coreboot
