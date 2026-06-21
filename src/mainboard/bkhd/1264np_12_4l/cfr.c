@@ -6,21 +6,25 @@
 #include <soc/cfr.h>
 
 /*
- * CPU package power-limit overrides, in watts; 0 keeps the SoC/FSP default.
- * Read at runtime by src/soc/intel/common/block/power_limit/power_limit.c via
- * get_uint_option(); requires an option backend (USE_UEFI_VARIABLE_STORE).
+ * CPU package power-limit overrides, in watts. Read at runtime by
+ * src/soc/intel/common/block/power_limit/power_limit.c via get_uint_option(),
+ * with the devicetree values (15 W PL1 / 20 W PL2) as the fallback. So when the
+ * option is left unset the board runs at 15/20 W; picking a wattage overrides
+ * it; picking "SoC default" (0) reverts to the Alder Lake-N silicon TDP (~6 W
+ * PL1, ~7.5 W PL2). Requires an option backend (USE_UEFI_VARIABLE_STORE).
  * Lowering PL1 also smooths current transients (di/dt).
  */
 static const struct sm_object cpu_pl1 = SM_DECLARE_ENUM({
 	.opt_name	= "tdp_pl1_override",
 	.ui_name	= "CPU PL1 sustained power",
-	.ui_helptext	= "Sustained package power limit in watts. Lower runs cooler and "
-			  "smooths current spikes; higher allows more sustained turbo. "
-			  "Default keeps the SoC value.",
-	.default_value	= 0,
+	.ui_helptext	= "Sustained package power limit in watts. This board's firmware "
+			  "default is 15 W - raised above the 6 W Alder Lake-N silicon "
+			  "minimum for better sustained performance. Lower runs cooler "
+			  "and quieter; higher allows more sustained turbo. \"SoC "
+			  "default\" reverts to the 6 W silicon value.",
+	.default_value	= 15,
 	.values		= (const struct sm_enum_value[]) {
-				{ "Default",	0  },
-				{ "6 W",	6  },
+				{ "SoC default (6 W)",	0  },
 				{ "10 W",	10 },
 				{ "12 W",	12 },
 				{ "15 W",	15 },
@@ -32,11 +36,13 @@ static const struct sm_object cpu_pl1 = SM_DECLARE_ENUM({
 static const struct sm_object cpu_pl2 = SM_DECLARE_ENUM({
 	.opt_name	= "tdp_pl2_override",
 	.ui_name	= "CPU PL2 burst power",
-	.ui_helptext	= "Short-term burst package power limit in watts. Default keeps the "
-			  "SoC value. Automatically clamped to be at least PL1.",
-	.default_value	= 0,
+	.ui_helptext	= "Short-term burst package power limit in watts. This board's "
+			  "firmware default is 20 W. \"SoC default\" reverts to about "
+			  "1.25x the silicon TDP (~7.5 W). Automatically clamped to be "
+			  "at least PL1.",
+	.default_value	= 20,
 	.values		= (const struct sm_enum_value[]) {
-				{ "Default",	0  },
+				{ "SoC default (7.5 W)",	0  },
 				{ "10 W",	10 },
 				{ "15 W",	15 },
 				{ "20 W",	20 },

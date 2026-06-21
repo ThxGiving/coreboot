@@ -7,20 +7,24 @@
 
 /*
  * Set up IT8625E EC temperature monitoring the way the stock firmware does -
- * two things the common env_ctrl driver does not do for this chip:
+ * three things the common env_ctrl driver does not do for this chip (env_ctrl
+ * only configures the PECI host in THERMAL_PECI mode, but stock keeps TMPIN1 in
+ * diode mode and routes it to PECI via the new temp-source register instead):
  *
- *  - Register 0x0c bits[5:4] (write 0x30) edge-trigger the thermal-diode ADC.
- *    env_ctrl leaves 0x0c at 0x07, so without this the CPU/board channels read
- *    a stuck -128 C.
- *  - The bank-2 temperature-source register 0x21d (register 0x1d with the bank
- *    bits[7:5] of register 0x06 set to 2) routes TMPIN1 (CPU) to the die
- *    source. Stock sets it to 0x04; leaving it 0 makes TMPIN1 read the cooler
- *    remote diode ~20 C below the die.
+ *  - Register 0x0c bits[5:4] (write 0x30) edge-trigger the temperature ADC.
+ *    env_ctrl leaves 0x0c at 0x07, so without this the channels read -128 C.
+ *  - The EC PECI host: the EXTEMP "GetTemp" registers 0x89/0x8a/0x8b/0x8c, the
+ *    EXTEMP control 0x8e and the PECI interface select 0x0a. Without these the
+ *    PECI transaction never runs and TMPIN1 is frozen at a fixed value that
+ *    does not track the die at all.
+ *  - The bank-2 temperature-source register 0x21d=0x04 (register 0x1d with the
+ *    bank bits[7:5] of register 0x06 set to 2) routes TMPIN1 (CPU) to PECI.
  *
- * Both were bisected and verified live against the stock firmware (0x0c=0x30:
- * -128 -> real; 0x21d=0x04: die temp, 0x00: ~20 C low). 0x06/0x0a/0x0b mirror
- * the stock dump. EC HWM base = 0xa30 (devicetree LDN4 io0); index/data ports
- * are base+5 / base+6.
+ * All verified live against the stock firmware: with all three, TMPIN1 reads
+ * the die temperature (~coretemp) and tracks load; dropping the PECI host
+ * freezes it, dropping 0x0c gives -128, dropping 0x21d reads a cool remote
+ * diode. 0x06/0x0a/0x0b mirror the stock dump. EC HWM base = 0xa30 (devicetree
+ * LDN4 io0); index/data ports are base+5 / base+6.
  */
 #define EC_HWM_BASE	0xa30
 static void it8625e_start_temp_adc(void)
@@ -29,6 +33,10 @@ static void it8625e_start_temp_adc(void)
 	const u16 data = EC_HWM_BASE + 6;	/* 0xa36 - HWM data  */
 	static const u8 init[][2] = {
 		{ 0x06, 0x02 }, { 0x0a, 0x64 }, { 0x0b, 0x08 }, { 0x0c, 0x30 },
+		/* EC PECI host (EXTEMP GetTemp) - without this the PECI read never
+		   runs and TMPIN1 is frozen instead of reading the die temp. */
+		{ 0x89, 0x30 }, { 0x8a, 0x01 }, { 0x8b, 0x02 }, { 0x8c, 0x01 },
+		{ 0x8e, 0xe0 },
 	};
 
 	for (size_t i = 0; i < ARRAY_SIZE(init); i++) {
@@ -36,7 +44,7 @@ static void it8625e_start_temp_adc(void)
 		outb(init[i][1], data);
 	}
 
-	/* TMPIN1 (CPU) source: bank-2 register 0x21d = 0x04 (die, like stock). */
+	/* TMPIN1 (CPU) source: bank-2 register 0x21d = 0x04 (PECI, like stock). */
 	outb(0x06, idx); outb(0x42, data);	/* select bank 2 (2 << 5 | 0x02) */
 	outb(0x1d, idx); outb(0x04, data);	/* register 0x1d = 0x04          */
 	outb(0x06, idx); outb(0x02, data);	/* back to bank 0                */

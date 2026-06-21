@@ -4,6 +4,7 @@
 #include <delay.h>
 #include <gpio.h>
 #include <option.h>
+#include <console/console.h>
 #include "beep.h"
 
 /*
@@ -56,11 +57,14 @@ void mainboard_boot_beep(void)
 	 * Runtime toggle from the BIOS setup / CFR ("Boot beep"); the build-time
 	 * BEEP_ON_BOOT is just the default when no option store is present.
 	 */
-	if (!get_uint_option("boot_beep", CONFIG(BEEP_ON_BOOT)))
+	if (!get_uint_option("boot_beep", CONFIG(BEEP_ON_BOOT))) {
+		printk(BIOS_INFO, "BEEP: boot beep disabled by option\n");
 		return;
+	}
 
 	gpio_configure_pads(buzzer_pad, ARRAY_SIZE(buzzer_pad));
 
+	printk(BIOS_INFO, "BEEP: playing boot chime on GPP_H4\n");
 	for (size_t i = 0; i < ARRAY_SIZE(boot_chime); i++) {
 		play_tone(boot_chime[i].freq_hz, boot_chime[i].dur_ms);
 		mdelay(30);	/* short gap between notes for articulation */
