@@ -7,12 +7,9 @@ use HW.GFX.GMA.Display_Probing;
 package GMA.Mainboard is
 
    ports : constant Port_List :=
-     (HDMI1,   -- DDI A
-      HDMI2,   -- DDI B  <- board HDMI is here (confirmed via i915: ENCODER DDI B/PHY B)
-      HDMI3,   -- DDI C
-      DP1,
-      DP2,
-      DP3,
+     (HDMI2,    -- DDI B (gmbus dpb) - board HDMI, confirmed via i915 (ENCODER DDI B/PHY B)
+      DP_TC1,   -- USB-C PHY / DDI TC1 - board DP routed through the Type-C PHY
+      USBC1,    -- same lanes as DP-Alt-Mode, in case the sink enumerates as USB-C
       others => Disabled);
 
 end GMA.Mainboard;
