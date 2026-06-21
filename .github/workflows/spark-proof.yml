@@ -1,0 +1,65 @@
+name: SPARK proof (libgfxinit ADL-N)
+
+# Proves the Alder Lake-N libgfxinit changes with gnatprove via the in-tree
+# harness (libhwbase Makefile.proof), using an Alire-provided toolchain.
+# The verdict is derived from gnatprove.out by util/spark/run-spark-proof.sh, which
+# exits 0 only when there are 0 unproved checks and our units have 0 errors.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "gnatprove mode"
+        type: choice
+        default: full
+        options: [check, flow, full]
+  push:
+    paths:
+      - util/spark/run-spark-proof.sh
+      - .github/workflows/spark-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    env:
+      ALR_VERSION: "2.1.1"
+    steps:
+      - name: Checkout coreboot fork
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Init the two submodules the proof needs
+        run: git submodule update --init --depth 1 3rdparty/libgfxinit 3rdparty/libhwbase
+
+      - name: Cache Alire toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/alire
+            ~/.cache/alire
+            ~/.config/alire
+          key: alire-${{ env.ALR_VERSION }}-gnatprove-15.1.0-x86_64
+
+      - name: Install Alire (alr)
+        run: |
+          set -euo pipefail
+          url="https://github.com/alire-project/alire/releases/download/v${ALR_VERSION}/alr-${ALR_VERSION}-bin-x86_64-linux.zip"
+          curl -fsSL -o /tmp/alr.zip "$url"
+          unzip -oq /tmp/alr.zip -d /tmp/alr
+          install -D /tmp/alr/bin/alr "$HOME/.local/bin/alr"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run SPARK proof
+        run: util/spark/run-spark-proof.sh "${{ github.event.inputs.mode || 'full' }}"
+
+      - name: Upload gnatprove report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gnatprove-report
+          path: 3rdparty/libgfxinit/build/gnatprove/gnatprove.out
+          if-no-files-found: ignore
