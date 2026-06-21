@@ -66,10 +66,14 @@ static const struct sm_object boot_beep = SM_DECLARE_BOOL({
 });
 
 /*
- * What the framebuffer console shows during boot. Read by the generic
- * framebuffer console via get_uint_option("fb_console", ...). The boot log is
- * always still available via cbmem -c and the serial console regardless.
+ * What the framebuffer console shows during boot - only when the separate,
+ * optional generic framebuffer console feature is built in (CONSOLE_FRAMEBUFFER,
+ * github.com/ThxGiving/coreboot-framebuffer-console). The board does not depend
+ * on it; this option only appears when it is enabled. Read by that module via
+ * get_uint_option("fb_console", ...). The boot log is always available via
+ * cbmem -c and the serial console regardless.
  */
+#if CONFIG(CONSOLE_FRAMEBUFFER)
 static const struct sm_object fb_console = SM_DECLARE_ENUM({
 	.opt_name	= "fb_console",
 	.ui_name	= "Boot screen",
@@ -84,6 +88,7 @@ static const struct sm_object fb_console = SM_DECLARE_ENUM({
 				{ "Progress bar",	2 },
 				SM_ENUM_VALUE_END		},
 });
+#endif
 
 static struct sm_obj_form system = {
 	.ui_name = "System",
@@ -97,7 +102,9 @@ static struct sm_obj_form system = {
 		&vtd,
 		&s0ix_enable,
 		&boot_beep,
+#if CONFIG(CONSOLE_FRAMEBUFFER)
 		&fb_console,
+#endif
 		NULL
 	},
 };

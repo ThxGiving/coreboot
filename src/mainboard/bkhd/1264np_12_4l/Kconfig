@@ -19,7 +19,6 @@ config BOARD_SPECIFIC_OPTIONS
 	select CRB_TPM
 	select MAINBOARD_HAS_TPM2
 	select MAINBOARD_HAS_LIBGFXINIT
-	select CONSOLE_FRAMEBUFFER
 
 config MAINBOARD_DIR
 	default "bkhd/1264np_12_4l"
@@ -45,6 +44,6 @@ config BEEP_ON_BOOT
 	  the beep can also be toggled at runtime via the "Boot beep" CFR option.
 
 config CONSOLE_CBMEM_BUFFER_SIZE
-	default 0x100000	# 1 MiB - headroom for the verbose boot log + fbcon replay
+	default 0x100000	# 1 MiB - headroom for the verbose boot log (and fbcon replay if enabled)
 
 endif # BOARD_BKHD_1264NP_12_4L
