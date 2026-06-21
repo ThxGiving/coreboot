@@ -346,12 +346,23 @@ static const char *payload_label(void)
 	return "Starting payload";
 }
 
-static void bs_init(void *unused)	{ fbcon_init(); phase("Initializing devices", 650); }
-static void bs_tables(void *unused)	{ phase("Preparing boot tables", 780); }
-static void bs_load(void *unused)	{ phase("Loading payload", 900); }
+/*
+ * Progress steps. The framebuffer only becomes drawable once graphics are up
+ * (device init), so the first step is at BS_POST_DEVICE; from there we tap the
+ * entry and exit of the remaining boot states for a finer, more steady climb.
+ */
+static void bs_devices(void *unused)	{ fbcon_init(); phase("Initializing devices", 300); }
+static void bs_finalize(void *unused)	{ phase("Finalizing hardware", 440); }
+static void bs_tables(void *unused)	{ phase("Writing boot tables", 580); }
+static void bs_tables_done(void *unused){ phase("Preparing ACPI", 700); }
+static void bs_load(void *unused)	{ phase("Loading payload", 830); }
+static void bs_load_done(void *unused)	{ phase("Payload ready", 940); }
 static void bs_boot(void *unused)	{ phase(payload_label(), 1000); }
 
-BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE,  BS_ON_ENTRY, bs_init,   NULL);
-BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, bs_tables, NULL);
-BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_ENTRY, bs_load,   NULL);
-BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, bs_boot,   NULL);
+BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE,     BS_ON_ENTRY, bs_devices,     NULL);
+BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_ENTRY, bs_finalize,    NULL);
+BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES,    BS_ON_ENTRY, bs_tables,      NULL);
+BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES,    BS_ON_EXIT,  bs_tables_done, NULL);
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD,    BS_ON_ENTRY, bs_load,        NULL);
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD,    BS_ON_EXIT,  bs_load_done,   NULL);
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT,    BS_ON_ENTRY, bs_boot,        NULL);
