@@ -24,6 +24,13 @@ chip soc/intel/alderlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
+	# CNVi Bluetooth: the AX211/AX201 BT core reaches the PCH over USB2
+	# port [9]. CnviMode alone (set automatically because cnvi_wifi is on)
+	# only brings up Wi-Fi; the BT core needs CnviBtCore enabled explicitly,
+	# otherwise the FSP leaves it off and Bluetooth never enumerates. The
+	# stock AMI firmware enables it (ACPI CNVI.CBTC).
+	register "cnvi_bt_core" = "true"
+
 	device domain 0 on
 		device ref igpu on
 			# Desktop board: external HDMI + DP only, NO embedded panel.
@@ -54,12 +61,12 @@ chip soc/intel/alderlake
 				[1] = USB2_PORT_MID(OC_SKIP),	/* Front USB3 #2 - USB2 companion */
 				[2] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #1 */
 				[3] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #2 */
-				[4] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
-				[5] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
-				[6] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[4] = USB2_PORT_MID(OC_SKIP),	/* F_USB 2x5 header 2nd port or spare (unmapped) */
+				[5] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header - CONFIRMED 2026-06-22 (device on usb 1-6) */
+				[6] = USB2_PORT_MID(OC_SKIP),	/* F_USB 2x5 header 2nd port or spare (unmapped) */
 				[7] = USB2_PORT_MID(OC_SKIP),	/* M.2 B-key - Quectel WWAN (internal) */
-				[8] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
-				[9] = USB2_PORT_MID(OC_SKIP),	/* CNVi Bluetooth - M.2 E-key AX211/AX201 */
+				[8] = USB2_PORT_MID(OC_SKIP),	/* F_USB 2x5 header 2nd port or spare (unmapped) */
+				[9] = USB2_PORT_MID(OC_SKIP),	/* CNVi Bluetooth - M.2 E-key AX211/AX201 (needs cnvi_bt_core=true above) */
 			}"
 
 			register "usb3_ports" = "{
