@@ -183,8 +183,10 @@ chip soc/intel/alderlake
 				# the CPU/board temperature sensors and the CPU-fan
 				# SmartGuardian curve, so the values are monitored and exposed
 				# to the OS (lm-sensors it87). TMPIN1=CPU, TMPIN2=board (from
-				# the stock EC dump); FAN2 = CPU fan (J2G1), matching the
-				# sibling cwwk/adl board and the stock pwm2 channel.
+				# the stock EC dump); FAN1 = CPU fan (J2G1), HW-confirmed
+				# 2026-06-24 via it87 pwm1 (the fan responds to pwm1, not
+				# pwm2 - the cwwk/adl sibling uses pwm2, but this board
+				# wires the single CPU_FAN header to FAN1/pwm1).
 				register "ec.vin_mask"   = "VIN_ALL"
 				# Match the stock IT8625E config exactly: the stock superiotool
 				# EC dump has reg 0x51 = 0x03, i.e. TMPIN1 and TMPIN2 BOTH in
@@ -202,18 +204,21 @@ chip soc/intel/alderlake
 				# 0x56=0x68 / 0x57=0x60 (which read CPU ~66C / board ~26C).
 				register "TMPIN1.offset" = "0x68"
 				register "TMPIN2.offset" = "0x60"
-				register "FAN2.mode"           = "FAN_SMART_AUTOMATIC"	# CPU_FAN (J2G1)
-				register "FAN2.smart.tmpin"     = "1"	# regulate by CPU temp
-				register "FAN2.smart.tmp_off"   = "40"
-				register "FAN2.smart.tmp_start" = "50"
-				register "FAN2.smart.tmp_full"  = "85"
-				register "FAN2.smart.tmp_delta" = "2"
-				register "FAN2.smart.pwm_start" = "30"
-				register "FAN2.smart.slope"     = "12"
-				# Board only has the one CPU_FAN header (FAN2). Drive the two
-				# unused channels OFF so they don't float at the chip default
-				# (otherwise pwm1/pwm3 show up running in lm-sensors).
-				register "FAN1.mode"           = "FAN_MODE_OFF"
+				register "FAN1.mode"           = "FAN_SMART_AUTOMATIC"	# CPU_FAN (J2G1)
+				register "FAN1.smart.tmpin"     = "1"	# regulate by CPU temp
+				# Silent slope: the N100 idles ~40C, so keep the fan OFF until
+				# 45C, kick in gently at 52C (pwm_start 30) and ramp slowly
+				# (8 PWM/C) to full at 85C - quiet at idle, audible only on load.
+				register "FAN1.smart.tmp_off"   = "45"
+				register "FAN1.smart.tmp_start" = "52"
+				register "FAN1.smart.tmp_full"  = "85"
+				register "FAN1.smart.tmp_delta" = "3"
+				register "FAN1.smart.pwm_start" = "30"
+				register "FAN1.smart.slope"     = "8"
+				# Board only has the one CPU_FAN header (J2G1 = FAN1/pwm1).
+				# Drive the two unused channels OFF so they don't float at the
+				# chip default (otherwise they show up running in lm-sensors).
+				register "FAN2.mode"           = "FAN_MODE_OFF"
 				register "FAN3.mode"           = "FAN_MODE_OFF"
 				device pnp 2e.1 on	# serial console (COM1)
 					io 0x60 = 0x3f8

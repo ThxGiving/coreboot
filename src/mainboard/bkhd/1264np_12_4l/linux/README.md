@@ -3,7 +3,7 @@
 coreboot programs the IT8625E Environment Controller at boot (via the
 `superio/ite/it8625e` `ec` block in `devicetree.cb`): CPU + board temperature
 sensors (TMPIN1/2), all voltage rails, and a CPU-fan SmartGuardian curve
-(FAN2 = the J2G1 header). To read the values under Linux:
+(FAN1 = the J2G1 header). To read the values under Linux:
 
 ## 1. Driver
 
@@ -51,4 +51,4 @@ sensors           # CPU/Board temps, +12V (calibrated), Vcore, VDIMM, 3V3, Vbat
   until traced with a multimeter, then add `label`/`compute` lines.
 - TMPIN modes are `THERMAL_DIODE` (matches stock). If CPU temp ever looks wrong,
   try `THERMAL_PECI` for TMPIN1 in the coreboot devicetree.
-- Only one fan header (J2G1 = FAN2/pwm2); other fan/pwm channels are unrouted.
+- Only one fan header (J2G1 = FAN1/pwm1); other fan/pwm channels are unrouted.
