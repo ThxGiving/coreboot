@@ -24,6 +24,12 @@ chip soc/intel/alderlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
+	# CNVi Bluetooth: the AX211 BT core reaches the PCH over USB2 port [9].
+	# CnviMode alone (auto, because cnvi_wifi is on) only brings up Wi-Fi; the
+	# BT core needs CnviBtCore enabled explicitly or the FSP leaves it off and
+	# Bluetooth never enumerates. (Synced from the main tree - was missing here.)
+	register "cnvi_bt_core" = "true"
+
 	device domain 0 on
 		device ref igpu on
 			# Desktop board: external HDMI + DP only, NO embedded panel.
@@ -260,6 +266,38 @@ chip soc/intel/alderlake
 
 		chip drivers/crb
 			device mmio 0xfed40000 on end
+		end
+
+		# 2026-06-24: enable TC port 1 so FSP-S sets UsbTcPortEn |= BIT(0) and the
+		# IOM actually brings the port up. On the main tree this alone moved the
+		# idle DDI_AUX_CTL_D from 0x5540023f (dead) to 0x0400023f (live). Testing
+		# it HERE on the sa-nico libgfxinit (which has the detect-path DKL PHY
+		# clock + DP_MODE) - the combo neither tree had before.
+		device ref tcss_xhci on
+			chip drivers/usb/acpi
+				register "type" = "UPC_TYPE_HUB"
+				device ref tcss_root_hub on
+					chip drivers/usb/acpi
+						register "desc" = ""TypeC Port 1 (DP)""
+						device ref tcss_usb3_port1 on end
+					end
+				end
+			end
+		end
+
+		# Fixed DisplayPort wired through the Type-C (Dekel) PHY on TC port 0.
+		# Declare a PMC-mux connector so tcss_get_port_info() builds a port_map
+		# and the static usbc_ops (usbc_ops.c) can drive the PMC IPC DP connect.
+		device ref pmc on
+			chip drivers/intel/pmc_mux
+				device generic 0 on
+					chip drivers/intel/pmc_mux/conn
+						use usb2_port1 as usb2_port
+						use tcss_usb3_port1 as usb3_port
+						device generic 0 alias conn0 on end
+					end
+				end
+			end
 		end
 	end
 end

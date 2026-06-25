@@ -81,18 +81,30 @@ static int check_ipc_sts(void)
 enum cb_err pmc_send_ipc_cmd(uint32_t cmd, const struct pmc_ipc_buffer *wbuf,
 			     struct pmc_ipc_buffer *rbuf)
 {
+	uint32_t sts_before = read32(pmc_reg(PMC_IPC_STS_OFFSET));
+
 	for (int i = 0; i < PMC_IPC_BUF_COUNT; ++i)
 		write32(pmc_wbuf(i), wbuf->buf[i]);
 
 	write32(pmc_reg(PMC_IPC_CMD_OFFSET), cmd);
 
-	if (check_ipc_sts()) {
+	int ipc_ret = check_ipc_sts();
+	uint32_t sts_after = read32(pmc_reg(PMC_IPC_STS_OFFSET));
+
+	/* FENN: dump the full PMC IPC transaction. Read the response buffer even on
+	   failure so we see what the PMC returned for a failed TCSS connect. */
+	for (int i = 0; i < PMC_IPC_BUF_COUNT; ++i)
+		rbuf->buf[i] = read32(pmc_rbuf(i));
+	printk(BIOS_ERR,
+	       "FENN PMC IPC cmd=0x%08x in=%08x %08x %08x %08x sts=%08x->%08x ret=%d out=%08x %08x %08x %08x\n",
+	       cmd, wbuf->buf[0], wbuf->buf[1], wbuf->buf[2], wbuf->buf[3],
+	       sts_before, sts_after, ipc_ret,
+	       rbuf->buf[0], rbuf->buf[1], rbuf->buf[2], rbuf->buf[3]);
+
+	if (ipc_ret) {
 		printk(BIOS_ERR, "PMC IPC command 0x%x failed\n", cmd);
 		return CB_ERR;
 	}
-
-	for (int i = 0; i < PMC_IPC_BUF_COUNT; ++i)
-		rbuf->buf[i] = read32(pmc_rbuf(i));
 
 	return CB_SUCCESS;
 }

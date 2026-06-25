@@ -137,6 +137,7 @@ static int send_pmc_connect_request(int port, const struct usbc_mux_info *mux_da
 					const struct tcss_port_map *port_map)
 {
 	uint32_t cmd;
+	int ret;
 	struct pmc_ipc_buffer req = { 0 };
 	struct pmc_ipc_buffer rsp;
 
@@ -162,7 +163,10 @@ static int send_pmc_connect_request(int port, const struct usbc_mux_info *mux_da
 	      GET_TCSS_CD_FIELD(SBU, cmd),
 	      GET_TCSS_CD_FIELD(ACC, cmd));
 
-	return send_pmc_req(CONNECT_REQ, &req, &rsp, PMC_IPC_CONN_REQ_SIZE);
+	ret = send_pmc_req(CONNECT_REQ, &req, &rsp, PMC_IPC_CONN_REQ_SIZE);
+	printk(BIOS_ERR, "FENN port C%d CONN rsp: ret %d rsp[0] 0x%08x rsp[1] 0x%08x\n",
+	       port, ret, rsp.buf[0], rsp.buf[1]);
+	return ret;
 }
 
 static int send_pmc_safe_mode_request(int port, const struct usbc_mux_info *mux_data,
@@ -315,17 +319,14 @@ static void tcss_configure_dp_mode(const struct tcss_port_map *port_map, size_t 
 
 		port_info = &port_map[i];
 
-		ret = send_pmc_connect_request(i, &mux_info, port_info);
-		if (ret) {
-			printk(BIOS_ERR, "Port %zu connect request failed\n", i);
-			continue;
+		/* FENN: go straight to the DP ALT_MODE + HPD like Linux intel_pmc_mux -
+		   NO CONNECT, NO SAFE_MODE. Those target a PD-negotiated port; a fixed
+		   static DP rejects them (status 0x3 = FAILURE|FATAL) which also poisons
+		   the ALT. The dead `if (0)` keeps the helpers referenced for -Werror. */
+		if (0) {
+			(void)send_pmc_connect_request(i, &mux_info, port_info);
+			(void)send_pmc_safe_mode_request(i, &mux_info, port_info);
 		}
-		ret = send_pmc_safe_mode_request(i, &mux_info, port_info);
-		if (ret) {
-			printk(BIOS_ERR, "Port %zu safe mode request failed\n", i);
-			continue;
-		}
-
 		ret = send_pmc_dp_mode_request(i, &mux_info, port_info);
 		if (ret) {
 			printk(BIOS_ERR, "Port C%zu mux set failed with error %d\n", i, ret);

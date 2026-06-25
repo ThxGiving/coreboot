@@ -1,9 +1,125 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <arch/io.h>
+#include <bootstate.h>
+#include <console/console.h>
+#include <device/device.h>
+#include <intelblocks/tcss.h>
 #include <soc/ramstage.h>
+#include <soc/soc_chip.h>
+#include <intelblocks/systemagent.h>
+#include <soc/pcr_ids.h>
+#include <delay.h>
 #include "gpio.h"
 #include "beep.h"
+
+/*
+ * Force the TCSS DisplayPort connect.
+ *
+ * The IOM firmware only sets IOM_PORT_STATUS PORT_IS_CONNECTED (and routes the
+ * AUX/lanes for DP) when the processor commands it via the PMC IPC TCSS connect
+ * - that handshake is coreboot's tcss_configure(), normally driven from the FSP
+ * MultiPhaseSiInit callback. Our IoT FSP-S has no multi-phase-si-init entry, so
+ * EnableMultiPhaseSiliconInit stays off and tcss_configure() never runs: the
+ * fixed DP on TC port 0 is left unconnected and libgfxinit's detect-AUX times
+ * out. Drive the same connect ourselves, before the GPU/display device init.
+ */
+static void bkhd_tcss_dp_connect(void *unused)
+{
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS))
+		return;
+
+	/* No AUX-bias pads on this board; only the TCSS DP-mode connect matters. */
+	static const struct typec_aux_bias_pads pads[MAX_TYPE_C_PORTS] = { 0 };
+
+	/* IOM_PORT_STATUS[0] = REGBAR(PID_IOM) + 0x160; bit31 = PORT_IS_CONNECTED. */
+	printk(BIOS_ERR, "FENN IOM_PORT_STATUS[0] BEFORE = 0x%08x\n",
+	       REGBAR32(PID_IOM, 0x160));
+
+	printk(BIOS_DEBUG, "BKHD: driving tcss_configure (IoT FSP has no MultiPhaseSiInit)\n");
+	tcss_configure(pads);
+
+	/* coreboot does NOT connect the TCSS DP (proven: IOM stays 0x48 even after
+	   a 15s wait here). The connect happens later, in the edk2 payload's DXE
+	   phase - FennIomWatchDxe instruments it there. Just log the post-configure
+	   state; the long wait only delayed the boot and is removed. */
+	printk(BIOS_ERR, "FENN IOM_PORT_STATUS[0] AFTER tcss_configure = 0x%08x\n",
+	       REGBAR32(PID_IOM, 0x160));
+}
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT, BS_ON_ENTRY, bkhd_tcss_dp_connect, NULL);
+
+/*
+ * FENN bracket read: log the IOM at the very LAST coreboot point (BS_PAYLOAD_BOOT
+ * entry, right before jumping into the edk2 payload). Together with the
+ * BS_DEV_INIT read (0x48) and the first edk2 image read (0x80000069), this pins
+ * down whether coreboot-late or the edk2 payload connects the IOM.
+ */
+static void bkhd_iom_pre_payload(void *unused)
+{
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS))
+		return;
+	printk(BIOS_ERR, "FENN IOM_PORT_STATUS[0] PRE-PAYLOAD-JUMP = 0x%08x\n",
+	       REGBAR32(PID_IOM, 0x160));
+}
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_BOOT, BS_ON_ENTRY, bkhd_iom_pre_payload, NULL);
+
+/*
+ * FENN fine trace: the IOM flips 0x48 -> 0x80000069 somewhere between BS_DEV_INIT
+ * (0x48) and BS_PAYLOAD_BOOT (connected) - i.e. IN COREBOOT. Read it at every
+ * boot state in that window to pin the exact phase (libgfxinit? a .final? a late
+ * FSP/CSE step?). The label is passed as the BOOT_STATE arg.
+ */
+static void bkhd_iom_trace(void *label)
+{
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS))
+		return;
+	printk(BIOS_ERR, "FENN IOM_TRACE @%-18s = 0x%08x\n",
+	       (const char *)label, REGBAR32(PID_IOM, 0x160));
+}
+BOOT_STATE_INIT_ENTRY(BS_DEV_INIT,     BS_ON_EXIT,  bkhd_iom_trace, (void *)"DEV_INIT-EXIT");
+BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE,  BS_ON_ENTRY, bkhd_iom_trace, (void *)"POST_DEVICE-ENTRY");
+BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE,  BS_ON_EXIT,  bkhd_iom_trace, (void *)"POST_DEVICE-EXIT");
+BOOT_STATE_INIT_ENTRY(BS_WRITE_TABLES, BS_ON_ENTRY, bkhd_iom_trace, (void *)"WRITE_TABLES-ENTRY");
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_ENTRY, bkhd_iom_trace, (void *)"PAYLOAD_LOAD-ENTRY");
+BOOT_STATE_INIT_ENTRY(BS_PAYLOAD_LOAD, BS_ON_EXIT,  bkhd_iom_trace, (void *)"PAYLOAD_LOAD-EXIT");
+
+/*
+ * FENN: C hook called FROM libgfxinit (Ada, tigerlake/hw-gfx-gma-port_detect.adb)
+ * to log IOM_PORT_STATUS[0] at each Type-C setup step, so we see exactly which
+ * libgfxinit step (HPD enable / TC_Cold block / probe) connects the DP IOM.
+ * Ada side: procedure Fenn_Iom_Trace (Tag : Word32); pragma Import (C, ...).
+ */
+void fenn_iom_trace(uint32_t tag);
+void fenn_iom_trace(uint32_t tag)
+{
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS))
+		return;
+	printk(BIOS_ERR, "FENN libgfx-TC tag=%u IOM=0x%08x\n",
+	       tag, REGBAR32(PID_IOM, 0x160));
+}
+
+/*
+ * FENN: poll IOM PORT_IS_CONNECTED (bit31) for up to timeout_ms (100us steps).
+ * Called from libgfxinit at the END of the TC ownership claim - this both
+ * MEASURES the uC's async latency (how long after the FIA/ownership writes it
+ * sets PORT_IS_CONNECTED) AND, by waiting until connected, lets the subsequent
+ * detect-AUX reach the sink. Deterministic poll-until-ready, not a blind delay.
+ */
+void fenn_iom_wait(uint32_t timeout_ms);
+void fenn_iom_wait(uint32_t timeout_ms)
+{
+	uint32_t i, ps = 0;
+	if (!CONFIG(SOC_INTEL_COMMON_BLOCK_TCSS))
+		return;
+	for (i = 0; i < timeout_ms * 10; i++) {
+		ps = REGBAR32(PID_IOM, 0x160);
+		if (ps & (1u << 31))
+			break;
+		udelay(100);
+	}
+	printk(BIOS_ERR, "FENN IOM_WAIT: connected=%d after %u.%ums IOM=0x%08x\n",
+	       !!(ps & (1u << 31)), i / 10, i % 10, ps);
+}
 
 /*
  * Set up IT8625E EC temperature monitoring the way the stock firmware does -
