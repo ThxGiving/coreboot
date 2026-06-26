@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <acpi/acpi.h>
+#include <soc/gpe.h>
 
 DefinitionBlock(
 	"dsdt.aml",
@@ -79,6 +80,42 @@ DefinitionBlock(
 			}
 		}
 		Name (_PRR, Package (0x01) { CBPR })
+	}
+
+	/*
+	 * Wake-on-LAN for the four discrete Intel i226-V NICs behind PCH PCIe
+	 * root ports 1c.0/1c.3/1c.6/1d.0 = ACPI RP01/RP04/RP07/RP09. coreboot's
+	 * ADL root-port ASL emits no _PRW, so although the i226 has WoL enabled
+	 * (ethtool wol g) the platform registers no wake source and a magic packet
+	 * cannot resume the box. Add the standard PCIe-PME wake (GPE0_PME_B0, the
+	 * shared PCI Express PME GPE; wakes from up to S4) to each NIC root port -
+	 * same idiom as soc/intel/common/block/acpi/acpi/pch_glan.asl for PCH LAN.
+	 * Live-verified on this board (2026-06-26): with these _PRW the four RPs
+	 * appear in /proc/acpi/wakeup and a magic packet resumes the box from S5
+	 * (rigorously confirmed: stays down through a control window, then wakes
+	 * ~38 s after a single timed packet). Stock firmware lacked this (its DSDT
+	 * only has _PRW on the unused integrated GLAN 0x1f.6), so this is a real
+	 * better-than-stock addition.
+	 */
+	Scope (\_SB.PCI0.RP01) {	/* 00:1c.0 - i226 #1 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP04) {	/* 00:1c.3 - i226 #2 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP07) {	/* 00:1c.6 - i226 #3 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP09) {	/* 00:1d.0 - i226 #4 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>
