@@ -27,13 +27,13 @@ config TCSS_HAS_USBC_OPS
 
 config ENABLE_TCSS_DISPLAY_DETECTION
 	bool "Enable detection of displays over USB Type-C ports with TCSS"
-	depends on TCSS_HAS_USBC_OPS
+	depends on TCSS_HAS_USBC_OPS && RUN_FSP_GOP
 	help
 	  Enable displays to be detected over Type-C ports during boot.
 
 config ENABLE_TCSS_USB_DETECTION
 	bool "Enable detection of USB boot devices attached to USB Type-C ports with TCSS"
-	depends on TCSS_HAS_USBC_OPS
+	depends on TCSS_HAS_USBC_OPS && RUN_FSP_GOP
 	help
 	  Enable USB-C attached storage devices to be detected at boot.
 	  This option is required for some payloads (eg, edk2), without which devices attached

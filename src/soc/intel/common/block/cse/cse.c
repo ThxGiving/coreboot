@@ -1329,6 +1329,11 @@ static void cse_set_state(struct device *dev)
 	if (CONFIG(SOC_INTEL_CSE_LITE_SYNC_BY_PAYLOAD))
 		return;
 
+	printk(BIOS_ERR, "FENN cse_set_state ENTER: fdo=%d me_state=%u soft_temp=%d\n",
+	       fast_spi_flash_descriptor_override(),
+	       get_uint_option("me_state", UINT_MAX),
+	       cse_is_hfs1_com_soft_temp_disable());
+
 	/* (CS)ME Disable Command */
 	struct me_disable_command {
 		struct mkhi_hdr hdr;

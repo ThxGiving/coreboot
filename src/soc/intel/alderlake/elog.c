@@ -148,6 +148,10 @@ static void pch_log_power_and_resets(const struct chipset_power_state *ps)
 	if (ps->gblrst_cause[0] & GBLRST_CAUSE0_THERMTRIP)
 		elog_add_event(ELOG_TYPE_THERM_TRIP);
 
+	/* SYS_PWROK Failure (unexpected loss of SYS_PWROK) */
+	if (ps->gblrst_cause[0] & GBLRST_CAUSE0_SYS_PWROK_FAIL)
+		elog_add_event(ELOG_TYPE_SYS_PWROK_FAIL);
+
 	/* CSME-Initiated Host Reset with power down */
 	if (ps->hpr_cause0 & HPR_CAUSE0_MI_HRPD)
 		elog_add_event(ELOG_TYPE_MI_HRPD);

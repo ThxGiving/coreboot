@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include <acpi/acpi.h>
+#include <soc/gpe.h>
 
 DefinitionBlock(
 	"dsdt.aml",
@@ -79,6 +80,66 @@ DefinitionBlock(
 			}
 		}
 		Name (_PRR, Package (0x01) { CBPR })
+
+		/*
+		 * Intel Bluetooth reset _DSM (GUID aa10f4e0-81ac-4233-abf6-
+		 * 3b2ac50e28d9), mirrored from coreboot's drivers/usb/acpi/
+		 * intel_bluetooth.c. Without it btintel logs "Bluetooth: hci0: No dsm
+		 * support to set reset delay". The capability query (Arg2=0, rev 0)
+		 * returns mask 0x0b = functions 0 (query) + 1 (set reset delay) + 3
+		 * (set reset method), the bits the Linux driver probes. Function 1
+		 * stores the delay into RDLY; function 3 accepts the reset-method
+		 * select (the actual reset is done by CBPR._RST / _PRR above). We add
+		 * only the _DSM here, not the driver's BTRT power resource, since that
+		 * references CNVi helper methods (GBTE/SBTE/BTRK) the ADL SoC does not
+		 * emit for the USB BT - our CBPR _PRR already covers the reset.
+		 */
+		Name (RDLY, 160)	/* ms; matches the Linux driver default */
+		Method (_DSM, 4, Serialized)
+		{
+			If ((Arg0 == ToUUID ("aa10f4e0-81ac-4233-abf6-3b2ac50e28d9")))
+			{
+				If ((Arg2 == Zero))
+				{
+					If ((Arg1 == Zero)) { Return (Buffer (One) { 0x0B }) }
+					Return (Buffer (One) { 0x00 })
+				}
+				If ((Arg2 == One)) { RDLY = Arg3 }	/* set reset delay */
+				If ((Arg2 == 0x03)) { Return (Buffer (One) { 0x01 }) }	/* reset method */
+				Return (Zero)
+			}
+			Return (Buffer (One) { 0x00 })
+		}
+	}
+
+	/*
+	 * Wake-on-LAN for the four discrete Intel i226-V NICs behind PCH PCIe
+	 * root ports 1c.0/1c.3/1c.6/1d.0 = ACPI RP01/RP04/RP07/RP09. coreboot's
+	 * ADL root-port ASL emits no _PRW, so although the i226 has WoL enabled
+	 * (ethtool wol g) the platform registers no wake source and a magic packet
+	 * cannot resume the box. Add the standard PCIe-PME wake (GPE0_PME_B0, the
+	 * shared PCI Express PME GPE; wakes from up to S4) to each NIC root port -
+	 * same idiom as soc/intel/common/block/acpi/acpi/pch_glan.asl for PCH LAN.
+	 */
+	Scope (\_SB.PCI0.RP01) {	/* 00:1c.0 - i226 #1 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP04) {	/* 00:1c.3 - i226 #2 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP07) {	/* 00:1c.6 - i226 #3 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
+	}
+	Scope (\_SB.PCI0.RP09) {	/* 00:1d.0 - i226 #4 */
+		Name (_S0W, 3)
+		Name (_PRW, Package () { GPE0_PME_B0, 4 })
+		Method (_DSW, 3) {}
 	}
 
 	#include <southbridge/intel/common/acpi/sleepstates.asl>

@@ -60,11 +60,11 @@ chip soc/intel/alderlake
 				[1] = USB2_PORT_MID(OC_SKIP),	/* Front USB3 #2 - USB2 companion */
 				[2] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #1 */
 				[3] = USB2_PORT_MID(OC_SKIP),	/* Front USB2 #2 */
-				[4] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
-				[5] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
-				[6] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[4] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header port 1 (HS5) - VERIFIED 2026-06-26 (device on usb 2-5) */
+				[5] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header port 2 (HS6) - VERIFIED 2026-06-26 (device on usb 2-6) */
+				[6] = USB2_PORT_MID(OC_SKIP),	/* spare/unmapped - not F_USB (header is [4]+[5], verified) */
 				[7] = USB2_PORT_MID(OC_SKIP),	/* M.2 B-key - Quectel WWAN (internal) */
-				[8] = USB2_PORT_MID(OC_SKIP),	/* F_USB internal 2x5 header (candidate) */
+				[8] = USB2_PORT_MID(OC_SKIP),	/* spare/unmapped - not F_USB (header is [4]+[5], verified) */
 				[9] = USB2_PORT_MID(OC_SKIP),	/* CNVi Bluetooth - M.2 E-key AX211/AX201 */
 			}"
 
@@ -182,8 +182,11 @@ chip soc/intel/alderlake
 				# the CPU/board temperature sensors and the CPU-fan
 				# SmartGuardian curve, so the values are monitored and exposed
 				# to the OS (lm-sensors it87). TMPIN1=CPU, TMPIN2=board (from
-				# the stock EC dump); FAN2 = CPU fan (J2G1), matching the
-				# sibling cwwk/adl board and the stock pwm2 channel.
+				# the stock EC dump); FAN1 = CPU fan (J2G1), HW-confirmed
+				# 2026-06-24 via it87 pwm1 (the fan responds to pwm1, not
+				# pwm2). The smart curve below is the "Normal" baseline; the
+				# "Fan profile" CFR option (Silent/Normal/Performance) patches
+				# FAN1.smart at runtime in mainboard_init() (see cfr.c).
 				register "ec.vin_mask"   = "VIN_ALL"
 				# Match the stock IT8625E config exactly: the stock superiotool
 				# EC dump has reg 0x51 = 0x03, i.e. TMPIN1 and TMPIN2 BOTH in
@@ -201,18 +204,21 @@ chip soc/intel/alderlake
 				# 0x56=0x68 / 0x57=0x60 (which read CPU ~66C / board ~26C).
 				register "TMPIN1.offset" = "0x68"
 				register "TMPIN2.offset" = "0x60"
-				register "FAN2.mode"           = "FAN_SMART_AUTOMATIC"	# CPU_FAN (J2G1)
-				register "FAN2.smart.tmpin"     = "1"	# regulate by CPU temp
-				register "FAN2.smart.tmp_off"   = "40"
-				register "FAN2.smart.tmp_start" = "50"
-				register "FAN2.smart.tmp_full"  = "85"
-				register "FAN2.smart.tmp_delta" = "2"
-				register "FAN2.smart.pwm_start" = "30"
-				register "FAN2.smart.slope"     = "12"
-				# Board only has the one CPU_FAN header (FAN2). Drive the two
+				register "FAN1.mode"           = "FAN_SMART_AUTOMATIC"	# CPU_FAN (J2G1)
+				register "FAN1.smart.tmpin"     = "1"	# regulate by CPU temp
+				# "Normal" baseline curve (the CFR "Fan profile" default). The
+				# N100 idles ~40C, so keep the fan OFF until 45C, kick in gently
+				# at 52C (pwm_start 30) and ramp slowly (8 PWM/C) to full at 85C.
+				register "FAN1.smart.tmp_off"   = "45"
+				register "FAN1.smart.tmp_start" = "52"
+				register "FAN1.smart.tmp_full"  = "85"
+				register "FAN1.smart.tmp_delta" = "3"
+				register "FAN1.smart.pwm_start" = "30"
+				register "FAN1.smart.slope"     = "8"
+				# Board only has the one CPU_FAN header (FAN1). Drive the two
 				# unused channels OFF so they don't float at the chip default
-				# (otherwise pwm1/pwm3 show up running in lm-sensors).
-				register "FAN1.mode"           = "FAN_MODE_OFF"
+				# (otherwise pwm2/pwm3 show up running in lm-sensors).
+				register "FAN2.mode"           = "FAN_MODE_OFF"
 				register "FAN3.mode"           = "FAN_MODE_OFF"
 				device pnp 2e.1 on	# serial console (COM1)
 					io 0x60 = 0x3f8
@@ -274,30 +280,22 @@ chip soc/intel/alderlake
 		# it HERE on the sa-nico libgfxinit (which has the detect-path DKL PHY
 		# clock + DP_MODE) - the combo neither tree had before.
 		device ref tcss_xhci on
-			chip drivers/usb/acpi
-				register "type" = "UPC_TYPE_HUB"
-				device ref tcss_root_hub on
-					chip drivers/usb/acpi
-						register "desc" = ""TypeC Port 1 (DP)""
-						device ref tcss_usb3_port1 on end
-					end
-				end
+			# FENN (Basti, 2026-06-25): drivers/usb/acpi REMOVED here. It opened
+			# Scope(\_SB.PCI0.TXHC.RHUB.SS01) for the USB ACPI, but the IoT FSP
+			# does NOT generate the TCSS-xHCI TXHC device (the DSDT only has the
+			# PCH XHCI) -> "Could not resolve symbol TXHC.RHUB.SS01, AE_NOT_FOUND"
+			# at OS boot. The device stays ON so FSP-S still sets UsbTcPortEn for
+			# the IOM/display; no spurious USB ACPI for this display-only port.
+			device ref tcss_root_hub on
+				device ref tcss_usb3_port1 on end
 			end
 		end
 
-		# Fixed DisplayPort wired through the Type-C (Dekel) PHY on TC port 0.
-		# Declare a PMC-mux connector so tcss_get_port_info() builds a port_map
-		# and the static usbc_ops (usbc_ops.c) can drive the PMC IPC DP connect.
-		device ref pmc on
-			chip drivers/intel/pmc_mux
-				device generic 0 on
-					chip drivers/intel/pmc_mux/conn
-						use usb2_port1 as usb2_port
-						use tcss_usb3_port1 as usb3_port
-						device generic 0 alias conn0 on end
-					end
-				end
-			end
-		end
+		# FENN (Basti, 2026-06-25): the fake PMC-mux / USB-C connector for the
+		# soldered DP was REMOVED. It declared TC1 as a dynamic USB-C port and
+		# drove a PMC IPC DP connect that FAILS ("Port 0 connect request failed")
+		# -> that hung the USB/TCSS init and BLOCKED USB enumeration (main tree
+		# has no such connector and its USB works). tcss_usb3_port1 (above) stays
+		# so FSP-S still sets UsbTcPortEn for the IOM.
 	end
 end

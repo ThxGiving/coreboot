@@ -6,8 +6,8 @@
  *
  * Three runtime modes (board exposes the "fb_console" option via CFR):
  *   0 OFF      - nothing is drawn.
- *   1 LOG      - the full console log, using a compact 8x16 monospace bitmap
- *                font (Terminus). Lines "page": they fill the screen top to
+ *   1 LOG      - the full console log, using coreboot's in-tree 8x16 monospace
+ *                VGA bitmap font. Lines "page": they fill the screen top to
  *                bottom, and once full the screen clears and printing restarts
  *                at the top - O(1) per line, no slow scroll on the
  *                write-combining framebuffer.
@@ -24,10 +24,12 @@
 #include <string.h>
 #include <types.h>
 
-#include "fbcon_font.h"		/* fbcon_font[95][FBCON_FH], FBCON_FW, FBCON_FH */
+/* Default console font: coreboot's in-tree 8x16 VGA font (GPL-2.0-or-later). */
+extern const unsigned char vga_font_8x16[256][16];
 
-#define CELL_W		FBCON_FW	/* 8 */
-#define CELL_H		FBCON_FH	/* 16 */
+/* Cell size (= active font glyph size). Latched from fbcon_font() in fbcon_init. */
+#define CELL_W		(st.cw)
+#define CELL_H		(st.ch)
 
 #define BAR_H		6		/* LOG-mode bottom bar height */
 #define BAR_GAP		2
@@ -55,6 +57,8 @@ static struct {
 	bool is32;		/* fast path */
 	uint8_t r_pos, g_pos, b_pos;
 	uint32_t fg;		/* packed white */
+	const struct fbcon_font *font;
+	uint32_t cw, ch;	/* font glyph size (CELL_W/CELL_H) */
 	uint32_t cols, rows;	/* character grid (LOG mode) */
 	uint32_t cur_col, cur_row;
 	int mode;
@@ -95,6 +99,29 @@ static void fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t c
 }
 
 /*
+ * The active console font. __weak so a board (or a future Kconfig-selected
+ * provider) can override it to swap in a different glyph table; the default is
+ * coreboot's in-tree 8x16 VGA font.
+ */
+__weak const struct fbcon_font *fbcon_font(void)
+{
+	static const struct fbcon_font vga = {
+		.width = 8, .height = 16, .first_char = 0, .num_chars = 256,
+		.glyphs = &vga_font_8x16[0][0],
+	};
+	return &vga;
+}
+
+/* Glyph bitmap for character 'c' in the active font (space if out of range). */
+static const uint8_t *glyph(unsigned char c)
+{
+	const struct fbcon_font *f = st.font;
+	if (c < f->first_char || c >= f->first_char + f->num_chars)
+		c = ' ';
+	return f->glyphs + (size_t)(c - f->first_char) * f->height;
+}
+
+/*
  * Blit one glyph at pixel coordinates. When 'opaque', unset pixels are painted
  * black (so it clears its cell); when not, only set pixels are drawn (so text
  * can sit on top of the progress bar).
@@ -103,7 +130,7 @@ static void blit_glyph(unsigned char c, uint32_t px, uint32_t py, bool opaque)
 {
 	if (c < 32 || c > 126)
 		c = ' ';
-	const uint8_t *g = fbcon_font[c - 32];
+	const uint8_t *g = glyph(c);
 
 	for (uint32_t y = 0; y < CELL_H; y++) {
 		uint8_t bits = g[y];
@@ -123,7 +150,7 @@ static void draw_label(uint32_t px, uint32_t py, const char *s, uint32_t scale)
 		unsigned char c = *s;
 		if (c < 32 || c > 126)
 			c = ' ';
-		const uint8_t *g = fbcon_font[c - 32];
+		const uint8_t *g = glyph(c);
 		for (uint32_t y = 0; y < CELL_H; y++) {
 			uint8_t bits = g[y];
 			for (uint32_t x = 0; x < CELL_W; x++) {
@@ -312,6 +339,13 @@ void fbcon_init(void)
 	st.b_pos = fb->blue_mask_pos;
 	st.fg = pack(0xff, 0xff, 0xff);
 
+	st.font = fbcon_font();
+	if (!st.font || !st.font->glyphs || !st.font->width ||
+	    st.font->width > 8 || !st.font->height)
+		return;
+	st.cw = st.font->width;
+	st.ch = st.font->height;
+
 	st.cols = st.width / CELL_W;
 	st.rows = (st.height - BAR_H - BAR_GAP) / CELL_H;
 	if (!st.cols || !st.rows)
@@ -330,7 +364,12 @@ void fbcon_init(void)
 }
 
 /* --- boot-state wiring -------------------------------------------------- */
-/* Name the payload coreboot hands control to, for the final step. */
+/*
+ * Friendly name for the payload coreboot hands control to. coreboot has no way
+ * to ask the payload its name (it runs only after the jump), and the CBFS name
+ * is just "fallback/payload", so map the built-in payload at compile time; any
+ * payload not listed falls back to the generic label.
+ */
 static const char *payload_label(void)
 {
 	if (CONFIG(PAYLOAD_EDK2))
@@ -350,14 +389,28 @@ static const char *payload_label(void)
  * Progress steps. The framebuffer only becomes drawable once graphics are up
  * (device init), so the first step is at BS_POST_DEVICE; from there we tap the
  * entry and exit of the remaining boot states for a finer, more steady climb.
+ *
+ * The permille values are not measured progress - there is no way to know how
+ * long each phase takes - they are just a monotonic visual climb spread across
+ * the boot states we hook, reaching 1000 as control passes to the payload.
  */
-static void bs_devices(void *unused)	{ fbcon_init(); phase("Initializing devices", 300); }
-static void bs_finalize(void *unused)	{ phase("Finalizing hardware", 440); }
-static void bs_tables(void *unused)	{ phase("Writing boot tables", 580); }
-static void bs_tables_done(void *unused){ phase("Preparing ACPI", 700); }
-static void bs_load(void *unused)	{ phase("Loading payload", 830); }
-static void bs_load_done(void *unused)	{ phase("Payload ready", 940); }
-static void bs_boot(void *unused)	{ phase(payload_label(), 1000); }
+enum {
+	PROG_DEVICES	= 300,
+	PROG_FINALIZE	= 440,
+	PROG_TABLES	= 580,
+	PROG_ACPI	= 700,
+	PROG_LOAD	= 830,
+	PROG_READY	= 940,
+	PROG_BOOT	= 1000,
+};
+
+static void bs_devices(void *unused)	{ fbcon_init(); phase("Initializing devices", PROG_DEVICES); }
+static void bs_finalize(void *unused)	{ phase("Finalizing hardware", PROG_FINALIZE); }
+static void bs_tables(void *unused)	{ phase("Writing boot tables", PROG_TABLES); }
+static void bs_tables_done(void *unused){ phase("Preparing ACPI", PROG_ACPI); }
+static void bs_load(void *unused)	{ phase("Loading payload", PROG_LOAD); }
+static void bs_load_done(void *unused)	{ phase("Payload ready", PROG_READY); }
+static void bs_boot(void *unused)	{ phase(payload_label(), PROG_BOOT); }
 
 BOOT_STATE_INIT_ENTRY(BS_POST_DEVICE,     BS_ON_ENTRY, bs_devices,     NULL);
 BOOT_STATE_INIT_ENTRY(BS_OS_RESUME_CHECK, BS_ON_ENTRY, bs_finalize,    NULL);
