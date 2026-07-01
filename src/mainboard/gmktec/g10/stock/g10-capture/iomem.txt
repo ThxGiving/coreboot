@@ -1,0 +1,76 @@
+00000000-00000fff : Reserved
+00001000-0009ffff : System RAM
+000a0000-000fffff : Reserved
+  000a0000-000dffff : PCI Bus 0000:00
+  000f0000-000fffff : System ROM
+00100000-09601fff : System RAM
+09602000-097fffff : Reserved
+09800000-0a1fffff : System RAM
+0a200000-0a20afff : ACPI Non-volatile Storage
+0a20b000-d8d22fff : System RAM
+d8d23000-d9311fff : Reserved
+d9312000-d95aafff : System RAM
+d95ab000-d95abfff : Reserved
+d95ac000-dc809fff : System RAM
+dc80a000-dd336fff : Reserved
+  dd30b000-dd30efff : MSFT0101:00
+    dd30b000-dd30efff : MSFT0101:00
+  dd30f000-dd312fff : MSFT0101:00
+    dd30f000-dd312fff : MSFT0101:00
+dd337000-dd3b3fff : ACPI Tables
+dd3b4000-dd5defff : ACPI Non-volatile Storage
+dd5df000-dde74fff : Reserved
+dde75000-deffffff : System RAM
+df000000-dfffffff : Reserved
+e0000000-febfffff : PCI Bus 0000:00
+  e0000000-f01fffff : PCI Bus 0000:04
+    e0000000-efffffff : 0000:04:00.0
+    f0000000-f01fffff : 0000:04:00.0
+  f8000000-fbffffff : PCI ECAM 0000 [bus 00-3f]
+    f8000000-fbffffff : PNP0C01:00
+  fc900000-fccfffff : PCI Bus 0000:04
+    fc900000-fc9fffff : 0000:04:00.4
+      fc900000-fc9fffff : xhci-hcd
+    fca00000-fcafffff : 0000:04:00.3
+      fca00000-fcafffff : xhci-hcd
+    fcb00000-fcbfffff : 0000:04:00.2
+      fcb00000-fcbfffff : ccp
+    fcc00000-fcc7ffff : 0000:04:00.0
+    fcc80000-fcc87fff : 0000:04:00.6
+      fcc80000-fcc87fff : ICH HD audio
+    fcc88000-fcc8bfff : 0000:04:00.1
+      fcc88000-fcc8bfff : ICH HD audio
+    fcc8c000-fcc8dfff : 0000:04:00.2
+      fcc8c000-fcc8dfff : ccp
+  fcd00000-fcdfffff : PCI Bus 0000:03
+    fcd00000-fcd03fff : 0000:03:00.0
+      fcd00000-fcd03fff : nvme
+  fce00000-fcefffff : PCI Bus 0000:02
+    fce00000-fce0ffff : 0000:02:00.0
+      fce00000-fce0ffff : r8169
+    fce10000-fce13fff : 0000:02:00.0
+  fcf00000-fcffffff : PCI Bus 0000:01
+    fcf00000-fcf0ffff : 0000:01:00.0
+      fcf00000-fcf0ffff : rtw88_pci
+  fd000000-fdffffff : PNP0C02:01
+    fd110510-fd11053f : MSFT0101:00
+  feb80000-febfffff : amd_iommu
+fec00000-fec003ff : IOAPIC 0
+fec01000-fec013ff : IOAPIC 1
+fec10000-fec10fff : PNP0C02:02
+fed00000-fed003ff : HPET 0
+  fed00000-fed003ff : PNP0103:00
+fed81500-fed818ff : AMDI0030:00
+  fed81500-fed818ff : AMDI0030:00 AMDI0030:00
+fedc0000-fedc0fff : PNP0C02:02
+fee00000-ffffffff : PCI Bus 0000:00
+  fee00000-fee00fff : PNP0C02:02
+  ff000000-ffffffff : PNP0C02:02
+100000000-35effffff : System RAM
+  1d8600000-1d9d38e27 : Kernel code
+  1d9e00000-1dae5bfff : Kernel rodata
+  1db000000-1db4d587f : Kernel data
+  1dba47000-1dbffffff : Kernel bss
+35f000000-41effffff : Reserved
+41f000000-41f33ffff : System RAM
+41f340000-41fffffff : Reserved

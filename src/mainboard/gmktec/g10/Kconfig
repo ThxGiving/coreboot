@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+if BOARD_GMKTEC_G10
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select SOC_AMD_COMMON_BLOCK_USE_ESPI
+	select SOC_AMD_PICASSO
+	select BOARD_ROMSIZE_KB_8192
+	select AMD_FWM_POSITION_420000_DEFAULT
+	select AZALIA_HDA_CODEC_SUPPORT
+	select HAVE_ACPI_RESUME
+	select DRIVERS_UART_ACPI
+	select AMD_SOC_CONSOLE_UART
+	# Run the AMD Picasso VBIOS (ATOMBIOS) so coreboot inits the Vega iGPU
+	# and lights the connected display. The SoC defaults VGA_BIOS_FILE to
+	# the Picasso/Raven2 VBIOS in amd_blobs and picks the right one at
+	# runtime via soc_is_raven2(). Without this there is no GPU init.
+	select VGA_BIOS
+	# Ask the VBIOS to set a linear VESA mode so coreboot gets a graphics
+	# framebuffer (for the framebuffer console / a splash / the OS handoff),
+	# not just an 80x25 VGA text buffer.
+	select FRAMEBUFFER_SET_VESA_MODE
+
+config MAINBOARD_DIR
+	default "gmktec/g10"
+
+config MAINBOARD_PART_NUMBER
+	default "NucBox G10"
+
+config MAINBOARD_VENDOR
+	default "GMKtec"
+
+config DEVICETREE
+	default "devicetree.cb"
+
+config FMDFILE
+	default "src/mainboard/gmktec/g10/board.fmd"
+
+config ONBOARD_VGA_IS_PRIMARY
+	bool
+	default y
+
+config CBFS_SIZE
+	default 0x7cf000
+
+if !EM100
+config EFS_SPI_READ_MODE
+	default 3	# Quad IO (1-1-4)
+config EFS_SPI_SPEED
+	default 0	# 66MHz
+config EFS_SPI_MICRON_FLAG
+	default 0
+config NORMAL_READ_SPI_SPEED
+	default 1	# 33MHz
+config ALT_SPI_SPEED
+	default 1	# 33MHz
+config TPM_SPI_SPEED
+	default 1	# 33MHz
+endif # !EM100
+
+endif # BOARD_GMKTEC_G10

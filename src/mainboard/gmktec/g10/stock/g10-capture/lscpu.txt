@@ -1,0 +1,46 @@
+Architektur:                             x86_64
+CPU Operationsmodus:                     32-bit, 64-bit
+Adressgrößen:                            43 bits physical, 48 bits virtual
+Byte-Reihenfolge:                        Little Endian
+CPU(s):                                  8
+Liste der Online-CPU(s):                 0-7
+Anbieterkennung:                         AuthenticAMD
+Modellname:                              AMD Ryzen 5 3500U with Radeon Vega Mobile Gfx
+Prozessorfamilie:                        23
+Modell:                                  24
+Thread(s) pro Kern:                      2
+Kern(e) pro Sockel:                      4
+Sockel:                                  1
+Stepping:                                1
+Übertaktung:                             aktiviert
+Skalierung der CPU(s):                   72%
+Maximale Taktfrequenz der CPU:           2100,0000
+Minimale Taktfrequenz der CPU:           1400,0000
+BogoMIPS:                                4200,09
+Markierungen:                            fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb hw_pstate ssbd ibpb vmmcall fsgsbase bmi1 avx2 smep bmi2 rdseed adx smap clflushopt sha_ni xsaveopt xsavec xgetbv1 clzero xsaveerptr arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif overflow_recov succor smca sev sev_es
+Virtualisierung:                         AMD-V
+L1d Cache:                               128 KiB (4 Instanzen)
+L1i Cache:                               256 KiB (4 Instanzen)
+L2 Cache:                                2 MiB (4 Instanzen)
+L3 Cache:                                4 MiB (1 Instanz)
+NUMA-Knoten:                             1
+NUMA-Knoten0 CPU(s):                     0-7
+Schwachstelle Gather data sampling:      Not affected
+Schwachstelle Ghostwrite:                Not affected
+Schwachstelle Indirect target selection: Not affected
+Schwachstelle Itlb multihit:             Not affected
+Schwachstelle L1tf:                      Not affected
+Schwachstelle Mds:                       Not affected
+Schwachstelle Meltdown:                  Not affected
+Schwachstelle Mmio stale data:           Not affected
+Schwachstelle Old microcode:             Not affected
+Schwachstelle Reg file data sampling:    Not affected
+Schwachstelle Retbleed:                  Mitigation; untrained return thunk; SMT vulnerable
+Schwachstelle Spec rstack overflow:      Mitigation; Safe RET
+Schwachstelle Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Schwachstelle Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Schwachstelle Spectre v2:                Mitigation; Retpolines; IBPB conditional; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+Schwachstelle Srbds:                     Not affected
+Schwachstelle Tsa:                       Not affected
+Schwachstelle Tsx async abort:           Not affected
+Schwachstelle Vmscape:                   Mitigation; IBPB before exit to userspace

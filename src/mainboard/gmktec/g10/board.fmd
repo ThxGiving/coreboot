@@ -1,0 +1,7 @@
+FLASH 8M {
+	BIOS {
+		RW_MRC_CACHE 64K
+		FMAP 4K
+		COREBOOT(CBFS)
+	}
+}

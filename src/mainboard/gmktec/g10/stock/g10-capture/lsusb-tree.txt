@@ -1,0 +1,24 @@
+/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/4p, 480M
+    ID 1d6b:0002 Linux Foundation 2.0 root hub
+    |__ Port 001: Dev 002, If 0, Class=Human Interface Device, Driver=usbhid, 1.5M
+        ID 046d:c326 Logitech, Inc. Washable Keyboard K310
+    |__ Port 001: Dev 002, If 1, Class=Human Interface Device, Driver=usbhid, 1.5M
+        ID 046d:c326 Logitech, Inc. Washable Keyboard K310
+    |__ Port 002: Dev 003, If 0, Class=Human Interface Device, Driver=usbhid, 12M
+        ID 046d:c52b Logitech, Inc. Unifying Receiver
+    |__ Port 002: Dev 003, If 1, Class=Human Interface Device, Driver=usbhid, 12M
+        ID 046d:c52b Logitech, Inc. Unifying Receiver
+    |__ Port 002: Dev 003, If 2, Class=Human Interface Device, Driver=usbhid, 12M
+        ID 046d:c52b Logitech, Inc. Unifying Receiver
+    |__ Port 004: Dev 004, If 0, Class=Vendor Specific Class, Driver=[none], 12M
+        ID 10c4:82e9 Silicon Labs 
+/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/4p, 10000M
+    ID 1d6b:0003 Linux Foundation 3.0 root hub
+/:  Bus 003.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/2p, 480M
+    ID 1d6b:0002 Linux Foundation 2.0 root hub
+    |__ Port 002: Dev 002, If 0, Class=Wireless, Driver=btusb, 12M
+        ID 0bda:c822 Realtek Semiconductor Corp. 
+    |__ Port 002: Dev 002, If 1, Class=Wireless, Driver=btusb, 12M
+        ID 0bda:c822 Realtek Semiconductor Corp. 
+/:  Bus 004.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/1p, 10000M
+    ID 1d6b:0003 Linux Foundation 3.0 root hub

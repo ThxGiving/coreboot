@@ -1,0 +1,8 @@
+Vendor name: GMKtec
+Board name: NucBox G10
+Category: desktop
+ROM package: SOIC-8
+ROM protocol: SPI
+ROM socketed: n
+Flashrom support: n
+Release year: 2025
