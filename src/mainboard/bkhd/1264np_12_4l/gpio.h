@@ -245,6 +245,8 @@ static const struct pad_config gpio_table[] = {
 	/* DW0: 0x44000702, DW1: 0x00003000 */
 	/* DW0: PAD_TRIG(OFF) | PAD_BUF(TX_RX_DISABLE) | (1 << 1) - IGNORED */
 	/* PAD_CFG_NF(GPP_A6, UP_20K, DEEP, NF1), */
+	/* TODO(R09A): OEM sets this GPO-high (ESPI_ALERT1# unused - single eSPI
+	 * slave). Kept as NF1 for now; adopt/test when back on coreboot. */
 	_PAD_CFG_STRUCT(GPP_A6, PAD_FUNC(NF1) | PAD_RESET(DEEP) | PAD_TRIG(OFF) | PAD_BUF(TX_RX_DISABLE) | (1 << 1), PAD_PULL(UP_20K)),
 
 	/* GPP_A7 - GPIO */
@@ -269,7 +271,7 @@ static const struct pad_config gpio_table[] = {
 
 	/* GPP_A11 - GPIO */
 	/* DW0: 0x84000201, DW1: 0x00000000 */
-	PAD_CFG_GPO(GPP_A11, 1, PLTRST),
+	PAD_CFG_GPO(GPP_A11, 1, PLTRST),	/* TODO(R09A): OEM sets this NC (no native function, unused) - review before adopting */
 
 	/* GPP_A12 - SATAXPCIE1 */
 	/* DW0: 0x44000702, DW1: 0x00003000 */
@@ -587,7 +589,7 @@ static const struct pad_config gpio_table[] = {
 
 	/* GPP_H23 - GPIO */
 	/* DW0: 0x84000201, DW1: 0x00000000 */
-	PAD_CFG_GPO(GPP_H23, 1, PLTRST),
+	PAD_CFG_GPO(GPP_H23, 1, PLTRST),	/* TODO(R09A): OEM configures this as INPUT (TXdis), not GPO-high - it reads a signal; our high-drive may fight it. Test when back on coreboot */
 
 	/* ------- GPIO Group GPP_D ------- */
 
@@ -1169,7 +1171,7 @@ static const struct pad_config gpio_table[] = {
 	/* DW0: 0x40880102, DW1: 0x00000000 */
 	/* DW0: (1 << 1) - IGNORED */
 	/* PAD_CFG_GPI_SCI(GPP_E0, NONE, DEEP, LEVEL, INVERT), */
-	PAD_CFG_GPI(GPP_E0, NONE, DEEP),	/* was GPI_SCI (dw2) */
+	PAD_CFG_NF(GPP_E0, NONE, DEEP, NF1),	/* R09A: SATAXPCIE0 (SATA port-0 detect, AHCI active). v11 had GPI_SCI=storm; NF fixes the storm AND restores the SATA detect our plain-GPI workaround had disabled */
 
 	/* GPP_E1 - GPIO */
 	/* DW0: 0x44000300, DW1: 0x00000000 */
