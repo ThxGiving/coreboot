@@ -55,6 +55,27 @@ chip northbridge/intel/broadwell
 				register "gen2_dec" = "0x000c0241"
 				register "gen3_dec" = "0x000c0251"
 				register "gen4_dec" = "0x000c02a1"
+				chip superio/nuvoton/nct6776 # Nuvoton NCT5577D (NCT6776-compatible) HWM/fan
+					device pnp 4e.0 off end		# Floppy
+					device pnp 4e.1 off end		# Parallel port
+					device pnp 4e.2 off end		# COM1
+					device pnp 4e.3 off end		# COM2 & IR
+					device pnp 4e.5 off end		# KBC
+					device pnp 4e.6 off end		# CIR
+					device pnp 4e.7 off end		# GPIO 6789
+					device pnp 4e.8 off end		# WDT1 / GPIO 01A
+					device pnp 4e.9 off end		# GPIO 1234567
+					device pnp 4e.a off end		# ACPI
+					device pnp 4e.b on		# Hardware monitor + front LED (0xa00)
+						io 0x60 = 0xa00
+					end
+					device pnp 4e.d off end		# VID
+					device pnp 4e.e off end		# CIR wakeup
+					device pnp 4e.f off end		# GPIO PP/OD select
+					device pnp 4e.14 off end	# SVID
+					device pnp 4e.16 off end	# Deep sleep
+					device pnp 4e.17 off end	# GPIOA
+				end
 			end
 			# SATA is disabled in the stock BIOS (boots from NVMe). The NUC5i5RYH
 			# 2.5" bay can be enabled by turning this on + setting sata_port_map.
