@@ -1,0 +1,85 @@
+00000000-00000fff : Reserved
+00001000-00057fff : System RAM
+00058000-00058fff : Reserved
+00059000-0009dfff : System RAM
+0009e000-0009ffff : Reserved
+000a0000-000effff : PCI Bus 0000:00
+  000c0000-000dffff : 0000:00:02.0
+000f0000-000fffff : System ROM
+00100000-9cadcfff : System RAM
+  01000000-025e9be7 : Kernel code
+  02600000-035cafff : Kernel rodata
+  03600000-039f8f7f : Kernel data
+  03f39000-043fffff : Kernel bss
+9cadd000-9cae5fff : ACPI Tables
+9cae6000-9cddbfff : System RAM
+9cddc000-9d2aefff : Reserved
+9d2af000-9fec6fff : System RAM
+9fec7000-9ff28fff : Reserved
+9ff29000-a20e7fff : System RAM
+a20e8000-a231dfff : Reserved
+a231e000-a2343fff : ACPI Tables
+a2344000-a2c7dfff : ACPI Non-volatile Storage
+a2c7e000-a2ffdfff : Reserved
+a2ffe000-a2ffefff : System RAM
+a2fff000-a2ffffff : Reserved
+a3000000-a37fffff : RAM buffer
+a3800000-a7ffffff : Reserved
+  a4000000-a7ffffff : Graphics Stolen Memory
+a8000000-dfffffff : PCI Bus 0000:00
+  a8000000-a800ffff : PNP0C02:03
+  a8010000-a801ffff : PNP0C02:03
+  a9000000-a9ffffff : 0000:00:02.0
+  aa000000-aa0fffff : PCI Bus 0000:03
+    aa000000-aa003fff : 0000:03:00.0
+      aa000000-aa003fff : nvme
+  aa100000-aa1fffff : PCI Bus 0000:02
+    aa100000-aa101fff : 0000:02:00.0
+      aa100000-aa101fff : iwlwifi
+  aa200000-aa21ffff : 0000:00:19.0
+    aa200000-aa21ffff : e1000e
+  aa220000-aa22ffff : 0000:00:14.0
+    aa220000-aa22ffff : xhci-hcd
+  aa230000-aa233fff : 0000:00:1b.0
+    aa230000-aa233fff : ICH HD audio
+  aa234000-aa237fff : 0000:00:03.0
+    aa234000-aa237fff : ICH HD audio
+  aa238000-aa2380ff : 0000:00:1f.3
+    aa238000-aa2380ff : i801_smbus
+  aa239000-aa2393ff : 0000:00:1d.0
+    aa239000-aa2393ff : ehci_hcd
+  aa23a000-aa23afff : 0000:00:19.0
+    aa23a000-aa23afff : e1000e
+  aa23c000-aa23c01f : 0000:00:16.0
+    aa23c000-aa23c01f : mei_me
+  b0000000-bfffffff : 0000:00:02.0
+f8000000-fbffffff : PCI ECAM 0000 [bus 00-3f]
+  f8000000-fbffffff : PNP0C02:03
+fe000000-fe113fff : PCI Bus 0000:00
+  fe104000-fe104fff : PNP0C02:04
+  fe106000-fe106fff : PNP0C02:04
+  fe111000-fe111007 : PNP0C02:04
+  fe111014-fe111fff : PNP0C02:04
+  fe112000-fe112fff : PNP0C02:04
+fec00000-fec00fff : Reserved
+  fec00000-fec003ff : IOAPIC 0
+fed00000-fed03fff : Reserved
+  fed00000-fed003ff : HPET 0
+    fed00000-fed003ff : PNP0103:00
+fed10000-fed17fff : PNP0C02:03
+fed18000-fed18fff : PNP0C02:03
+fed19000-fed19fff : PNP0C02:03
+fed1c000-fed1ffff : Reserved
+  fed1c000-fed1ffff : PNP0C02:03
+    fed1f410-fed1f414 : iTCO_wdt.1.auto
+    fed1f800-fed1f9ff : intel-spi
+      fed1f800-fed1f9ff : intel-spi intel-spi
+fed20000-fed3ffff : PNP0C02:03
+fed70000-fed70fff : MSFT0101:00
+fed90000-fed90fff : dmar0
+fed91000-fed91fff : dmar1
+fee00000-fee00fff : Reserved
+ff000000-ffffffff : INT0800:00
+  ff000000-ffffffff : PNP0C02:03
+100000000-256ffffff : System RAM
+257000000-257ffffff : RAM buffer

@@ -1,0 +1,38 @@
+/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/11p, 480M
+    ID 1d6b:0002 Linux Foundation 2.0 root hub
+    |__ Port 003: Dev 002, If 0, Class=Human Interface Device, Driver=usbhid, 480M
+        ID 1d6b:0104 Linux Foundation Multifunction Composite Gadget
+    |__ Port 003: Dev 002, If 1, Class=Human Interface Device, Driver=usbhid, 480M
+        ID 1d6b:0104 Linux Foundation Multifunction Composite Gadget
+    |__ Port 003: Dev 002, If 2, Class=Human Interface Device, Driver=usbhid, 480M
+        ID 1d6b:0104 Linux Foundation Multifunction Composite Gadget
+    |__ Port 003: Dev 002, If 3, Class=Mass Storage, Driver=usb-storage, 480M
+        ID 1d6b:0104 Linux Foundation Multifunction Composite Gadget
+    |__ Port 004: Dev 003, If 0, Class=Hub, Driver=hub/4p, 480M
+        ID 045b:0209 Hitachi, Ltd 
+        |__ Port 002: Dev 005, If 0, Class=Vendor Specific Class, Driver=usbfs, 12M
+            ID 10c4:ea60 Silicon Labs CP210x UART Bridge
+        |__ Port 004: Dev 006, If 0, Class=Vendor Specific Class, Driver=usbfs, 12M
+            ID 1b1f:c020 eQ-3 Entwicklung GmbH HmIP-RFUSB
+    |__ Port 007: Dev 004, If 0, Class=Wireless, Driver=usbfs, 12M
+        ID 8087:0a2a Intel Corp. Bluetooth wireless interface
+    |__ Port 007: Dev 004, If 1, Class=Wireless, Driver=usbfs, 12M
+        ID 8087:0a2a Intel Corp. Bluetooth wireless interface
+/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci_hcd/4p, 5000M
+    ID 1d6b:0003 Linux Foundation 3.0 root hub
+    |__ Port 004: Dev 002, If 0, Class=Hub, Driver=hub/4p, 5000M
+        ID 045b:0210 Hitachi, Ltd 
+/:  Bus 003.Port 001: Dev 001, Class=root_hub, Driver=ehci-pci/2p, 480M
+    ID 1d6b:0002 Linux Foundation 2.0 root hub
+    |__ Port 001: Dev 002, If 0, Class=Hub, Driver=hub/8p, 480M
+        ID 8087:8001 Intel Corp. Integrated Hub
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 002: ID 1d6b:0104 Linux Foundation Multifunction Composite Gadget
+Bus 001 Device 003: ID 045b:0209 Hitachi, Ltd 
+Bus 001 Device 004: ID 8087:0a2a Intel Corp. Bluetooth wireless interface
+Bus 001 Device 005: ID 10c4:ea60 Silicon Labs CP210x UART Bridge
+Bus 001 Device 006: ID 1b1f:c020 eQ-3 Entwicklung GmbH HmIP-RFUSB
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 002: ID 045b:0210 Hitachi, Ltd 
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 002: ID 8087:8001 Intel Corp. Integrated Hub

@@ -1,0 +1,53 @@
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-7.0.14-4-pve root=/dev/mapper/pve-root ro quiet memmap=0x1000%0xa2fff000+2 intel_iommu=on iommu=pt
+[    0.010246] ACPI: DMAR 0x00000000A2342E78 0000D4 (v01 INTEL  NUC5i5RY 00000182 INTL 00000001)
+[    0.010272] ACPI: Reserving DMAR table memory at [mem 0xa2342e78-0xa2342f4b]
+[    0.035955] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-7.0.14-4-pve root=/dev/mapper/pve-root ro quiet memmap=0x1000%0xa2fff000+2 intel_iommu=on iommu=pt
+[    0.036044] DMAR: IOMMU enabled
+[    0.115474] DMAR: Host address width 39
+[    0.115476] DMAR: DRHD base: 0x000000fed90000 flags: 0x0
+[    0.115485] DMAR: dmar0: reg_base_addr fed90000 ver 1:0 cap 1c0000c40660462 ecap 7e1ff0505e
+[    0.115488] DMAR: DRHD base: 0x000000fed91000 flags: 0x1
+[    0.115492] DMAR: dmar1: reg_base_addr fed91000 ver 1:0 cap d2008c20660462 ecap f010da
+[    0.115495] DMAR: RMRR base: 0x000000a2ef2000 end: 0x000000a2f02fff
+[    0.115498] DMAR: RMRR base: 0x000000a3800000 end: 0x000000a7ffffff
+[    0.115500] DMAR: ANDD device: 2 name: \_SB.PCI0.SDHC
+[    0.115502] DMAR-IR: IOAPIC id 2 under DRHD base  0xfed91000 IOMMU 1
+[    0.115504] DMAR-IR: HPET id 0 under DRHD base 0xfed91000
+[    0.115506] DMAR-IR: x2apic is disabled because BIOS sets x2apic opt out bit.
+[    0.115507] DMAR-IR: Use 'intremap=no_x2apic_optout' to override the BIOS setting.
+[    0.116303] DMAR-IR: Enabled IRQ remapping in xapic mode
+[    0.243667] pci 0000:00:02.0: DMAR: Disabling IOMMU for graphics on this chipset
+[    0.253395] iommu: Default domain type: Passthrough (set via kernel command line)
+[    0.293712] DMAR: ACPI device "INT3436:00" under DMAR at fed91000 as 00:17.0
+[    0.293722] DMAR: No ATSR found
+[    0.293723] DMAR: No SATC found
+[    0.293726] DMAR: dmar1: Using Queued invalidation
+[    0.293835] pci 0000:00:00.0: Adding to iommu group 0
+[    0.293847] pci 0000:00:03.0: Adding to iommu group 1
+[    0.293857] pci 0000:00:14.0: Adding to iommu group 2
+[    0.293872] pci 0000:00:16.0: Adding to iommu group 3
+[    0.293884] pci 0000:00:19.0: Adding to iommu group 4
+[    0.293898] pci 0000:00:1b.0: Adding to iommu group 5
+[    0.293929] pci 0000:00:1c.0: Adding to iommu group 6
+[    0.293950] pci 0000:00:1c.3: Adding to iommu group 7
+[    0.293969] pci 0000:00:1c.4: Adding to iommu group 8
+[    0.293980] pci 0000:00:1d.0: Adding to iommu group 9
+[    0.293996] pci 0000:00:1f.0: Adding to iommu group 10
+[    0.294006] pci 0000:00:1f.3: Adding to iommu group 10
+[    0.294016] pci 0000:02:00.0: Adding to iommu group 11
+[    0.294029] pci 0000:03:00.0: Adding to iommu group 12
+[    0.294061] DMAR: Intel(R) Virtualization Technology for Directed I/O
+[    0.339256] DMAR: DRHD: handling fault status reg 3
+[    0.339262] DMAR: [DMA Read NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear
+[    0.339546] DMAR: DRHD: handling fault status reg 2
+[    0.339549] DMAR: [DMA Write NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear
+[    0.339593] DMAR: DRHD: handling fault status reg 2
+[    0.339595] DMAR: [DMA Write NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear
+[    3.338698] DMAR: DRHD: handling fault status reg 3
+[    6.338600] dmar_fault: 17 callbacks suppressed
+[    6.338603] DMAR: DRHD: handling fault status reg 3
+[    6.338606] DMAR: [DMA Read NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear
+[    6.338837] DMAR: DRHD: handling fault status reg 2
+[    6.338841] DMAR: [DMA Write NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear
+[    6.338891] DMAR: DRHD: handling fault status reg 2
+[    6.338893] DMAR: [DMA Write NO_PASID] Request device [00:16.7] fault addr 0xa2fff000 [fault reason 0x02] Present bit in context entry is clear

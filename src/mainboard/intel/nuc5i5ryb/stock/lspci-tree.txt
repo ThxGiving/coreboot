@@ -1,0 +1,13 @@
+-[0000:00]-+-00.0  Intel Corporation Broadwell-U Host Bridge -OPI [8086:1604]
+           +-02.0  Intel Corporation HD Graphics 6000 [8086:1626]
+           +-03.0  Intel Corporation Broadwell-U Audio Controller [8086:160c]
+           +-14.0  Intel Corporation Wildcat Point-LP USB xHCI Controller [8086:9cb1]
+           +-16.0  Intel Corporation Wildcat Point-LP MEI Controller #1 [8086:9cba]
+           +-19.0  Intel Corporation Ethernet Connection (3) I218-V [8086:15a3]
+           +-1b.0  Intel Corporation Wildcat Point-LP High Definition Audio Controller [8086:9ca0]
+           +-1c.0-[01]--
+           +-1c.3-[02]----00.0  Intel Corporation Wireless 7265 [8086:095a]
+           +-1c.4-[03]----00.0  Micron Technology Inc 2550 NVMe SSD (DRAM-less) [1344:5416]
+           +-1d.0  Intel Corporation Wildcat Point-LP USB EHCI Controller [8086:9ca6]
+           +-1f.0  Intel Corporation Wildcat Point-LP LPC Controller [8086:9cc3]
+           \-1f.3  Intel Corporation Wildcat Point-LP SMBus Controller [8086:9ca2]

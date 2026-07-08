@@ -1,0 +1,23 @@
+flashrom 1.4.0 on Linux 7.0.14-4-pve (x86_64)
+flashrom is free software, get the source code at https://flashrom.org
+
+No DMI table found.
+Found chipset "Intel Broadwell U Premium".
+Enabling flash write... Warning: BIOS region SMM protection is enabled!
+Warning: Setting BIOS Control at 0xdc from 0x2a to 0x09 failed.
+New value is 0x2a.
+SPI Configuration is locked down.
+FREG0: Flash Descriptor region (0x00000000-0x00000fff) is read-only.
+FREG1: BIOS region (0x001a0000-0x007fffff) is read-write.
+FREG2: Management Engine region (0x00003000-0x0019ffff) is locked.
+FREG3: Gigabit Ethernet region (0x00001000-0x00002fff) is read-write.
+Not all flash regions are freely accessible by flashrom. This is most likely
+due to an active ME. Please see https://flashrom.org/ME for details.
+At least some flash regions are read protected. You have to use a flash
+layout and include only accessible regions. For write operations, you'll
+additionally need the --noverify-all switch. See manpage for more details.
+Enabling hardware sequencing because some important opcode is locked.
+OK.
+RDID cycle not supported, skipping flash identification.
+Found Programmer flash chip "Opaque flash chip" (8192 kB, Programmer-specific) on internal.
+No operations were specified.
