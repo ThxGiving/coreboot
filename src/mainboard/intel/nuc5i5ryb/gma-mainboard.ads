@@ -8,11 +8,14 @@ use HW.GFX.GMA.Display_Probing;
 
 private package GMA.Mainboard is
 
+   -- NUC5i5RYB external outputs: HDMI + mini-DisplayPort, no internal panel.
    ports : constant Port_List :=
-     (DP1, -- All DisplayPorts
-      HDMI1,
-      DP2, -- VGA
-      eDP,
+     (HDMI1,
+      HDMI2,
+      HDMI3,
+      DP1,
+      DP2,
+      DP3,
       others => Disabled);
 
 end GMA.Mainboard;

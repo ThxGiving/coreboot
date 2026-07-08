@@ -16,11 +16,11 @@ elitebook data and must be replaced with the NUC's real data in `stock/`.
 - [x] gpio.c            <- DONE (first pass): 95 LP pads decoded from inteltool. Owner/route/reset TODO
 - [x] devicetree.cb     <- DONE: devices on/off from lspci, gen_dec via setpci, ec_present=false, SATA off (stock), M.2 slots. USB OC-map TODO
 - [x] pei_data.c        <- DONE (first pass): SPD 0x50/0x52, USB all-on/OC-skip. USB OC routing TODO
-- [ ] hda_verb.c        <- NUC audio codec verbs (elitebook's are wrong)
+- [x] hda_verb.c        <- DONE: Realtek ALC283 pin configs from live codec dump
 - [x] data.vbt          <- DONE: real NUC VBT pulled from live i915 debugfs (6144B, $VBT). stock/vbt.bin
-- [ ] gma-mainboard.ads <- display ports (NUC5: HDMI + mini-DP)
+- [x] gma-mainboard.ads <- DONE: HDMI + mini-DP ports, no eDP
 - [ ] dsdt.asl/acpi/    <- reference stock/acpi/dsdt.dsl + ssdt*.dsl
-- [ ] Kconfig           <- add TPM2/PTT once booting; emit correct RMRR for 00:16.7 -> fTPM works under VT-d
+- [~] TPM              <- NOT feasible: coreboot Broadwell has no CRB/PTT support (all BDW boards use memory-mapped TPM1). fTPM stays out; VMs use swtpm. Would need CRB support added first.
 - [ ] flash             <- keep vendor IFD descriptor + ME region; replace BIOS region only (external)
 
 ## Reference boards
