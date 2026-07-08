@@ -14,7 +14,7 @@ elitebook data and must be replaced with the NUC's real data in `stock/`.
 
 ## TODO (replace elitebook data with NUC's)
 - [x] gpio.c            <- DONE (first pass): 95 LP pads decoded from inteltool. Owner/route/reset TODO
-- [ ] devicetree.cb     <- stock/lspci-vvvxxx.txt (LPC gen_dec, SATA map, USB ports, RPs)
+- [x] devicetree.cb     <- DONE: devices on/off from lspci, gen_dec via setpci, ec_present=false, SATA off (stock), M.2 slots. USB OC-map TODO
 - [ ] pei_data.c        <- RAM/PEI: 2x DDR3L SO-DIMM
 - [ ] hda_verb.c        <- NUC audio codec verbs (elitebook's are wrong)
 - [x] data.vbt          <- DONE: real NUC VBT pulled from live i915 debugfs (6144B, $VBT). stock/vbt.bin
