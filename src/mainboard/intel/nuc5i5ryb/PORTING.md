@@ -13,7 +13,7 @@ elitebook data and must be replaced with the NUC's real data in `stock/`.
 - Thermal: single zone TZ00 = CPU DTS (stock/acpi/ssdt2.dsl); no board temp / voltages
 
 ## TODO (replace elitebook data with NUC's)
-- [ ] gpio.c            <- stock/inteltool-all.txt + inteltool-gpio.txt
+- [x] gpio.c            <- DONE (first pass): 95 LP pads decoded from inteltool. Owner/route/reset TODO
 - [ ] devicetree.cb     <- stock/lspci-vvvxxx.txt (LPC gen_dec, SATA map, USB ports, RPs)
 - [ ] pei_data.c        <- RAM/PEI: 2x DDR3L SO-DIMM
 - [ ] hda_verb.c        <- NUC audio codec verbs (elitebook's are wrong)
