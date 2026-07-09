@@ -2,6 +2,11 @@
 
 chip northbridge/intel/broadwell
 	register "ec_present" = "false"		# NUC has no coreboot-managed EC
+	# Socketed SO-DIMM board (like the google/jecht chromeboxes): the DQ byte
+	# lanes are interleaved on the PCB. The elitebook laptop donor left this
+	# false, which trains but corrupts the IMC data path on this board, so the
+	# first CPU access to DRAM hangs (MC5/MC6 uncorrected errors).
+	register "dq_pins_interleaved" = "true"
 	chip cpu/intel/haswell
 		device cpu_cluster 0 on ops haswell_cpu_bus_ops end
 	end
