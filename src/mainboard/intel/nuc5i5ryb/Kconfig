@@ -8,6 +8,9 @@ config BOARD_SPECIFIC_OPTIONS
 	select BOARD_ROMSIZE_KB_8192
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
+	select HAVE_IFD_BIN
+	select HAVE_MRC
+	select HAVE_REFCODE_BLOB
 	select INTEL_GMA_HAVE_VBT
 	select MAINBOARD_HAS_LIBGFXINIT
 	select MAINBOARD_USES_IFD_GBE_REGION
@@ -20,5 +23,22 @@ config MAINBOARD_DIR
 
 config MAINBOARD_PART_NUMBER
 	default "NUC5i5RYB"
+
+# Flash geometry from the board's own Intel Flash Descriptor (read via
+# `flashrom -p internal --ifd -i fd` on the stock unit):
+#   Descriptor 0x000000-0x000fff / GbE 0x001000-0x002fff /
+#   ME 0x003000-0x19ffff / BIOS 0x1a0000-0x7fffff
+# CBFS_SIZE therefore equals the BIOS region size (0x800000 - 0x1a0000).
+config CBFS_SIZE
+	default 0x660000
+
+config IFD_BIN_PATH
+	default "3rdparty/blobs/mainboard/intel/nuc5i5ryb/descriptor.bin"
+
+config MRC_FILE
+	default "3rdparty/blobs/mainboard/intel/nuc5i5ryb/mrc.bin"
+
+config REFCODE_BLOB_FILE
+	default "3rdparty/blobs/mainboard/intel/nuc5i5ryb/refcode.elf"
 
 endif
