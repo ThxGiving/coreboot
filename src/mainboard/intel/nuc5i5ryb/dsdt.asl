@@ -28,4 +28,11 @@ DefinitionBlock(
 		#include <southbridge/intel/lynxpoint/acpi/pch.asl>
 		#include <drivers/intel/gma/acpi/default_brightness_levels.asl>
 	}
+
+	#include "acpi/pcie_pxsx.asl"
+
+#if CONFIG(TPM2_PTT_ACPI_START)
+	/* Intel PTT firmware-TPM 2.0 (\_SB.TPM, ACPI Start Method 2). */
+	#include "acpi/tpm.asl"
+#endif
 }

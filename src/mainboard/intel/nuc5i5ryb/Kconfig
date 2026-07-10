@@ -8,15 +8,32 @@ config BOARD_SPECIFIC_OPTIONS
 	select BOARD_ROMSIZE_KB_8192
 	select HAVE_ACPI_RESUME
 	select HAVE_ACPI_TABLES
+	select DRIVERS_OPTION_CFR_ENABLED if PAYLOAD_EDK2 && SMMSTORE
+	# CFR options only take effect with an option backend; the EFI variable
+	# store flips the backend default to USE_UEFI_VARIABLE_STORE.
+	select DRIVERS_EFI_VARIABLE_STORE if PAYLOAD_EDK2 && SMMSTORE
 	select HAVE_IFD_BIN
 	select HAVE_MRC
 	select HAVE_REFCODE_BLOB
+	select POWER_STATE_DEFAULT_ON_AFTER_FAILURE	# server: auto power-on after AC loss
 	select INTEL_GMA_HAVE_VBT
 	select MAINBOARD_HAS_LIBGFXINIT
 	select MAINBOARD_USES_IFD_GBE_REGION
 	select SOC_INTEL_BROADWELL
+	select SUPERIO_NUVOTON_COMMON_HWM
 	select SUPERIO_NUVOTON_NCT6776
+	select SYSTEM_TYPE_MINIPC
 	select NO_UART_ON_SUPERIO
+
+config TPM2_PTT_ACPI_START
+	bool "Intel PTT firmware-TPM 2.0 (ACPI Start Method 2)"
+	default y
+	help
+	  Expose the ME's PTT firmware-TPM 2.0 to the OS via a board-supplied
+	  TPM2 ACPI table (Start Method 2) and the \_SB.TPM device. This silicon
+	  has no CRB at the standard 0xfed40000; the ME CRB is at 0xfed70000
+	  (see acpi/tpm.asl + ptt.c). Runtime-toggleable via the CFR "tpm_enable"
+	  option.
 
 config MAINBOARD_DIR
 	default "intel/nuc5i5ryb"

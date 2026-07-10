@@ -25,6 +25,8 @@ chip northbridge/intel/broadwell
 		device pci 03.0 on end # iGPU HDMI/DP audio
 
 		chip southbridge/intel/wildcatpoint # Wildcat Point-LP PCH (8086:9cc3)
+			# Port 0 = RYH 2.5" bay; controller (1f.2) toggled by "sata_enable"
+			register "sata_port_map" = "0x1"
 			device pci 13.0 off end # Smart Sound Audio DSP
 			device pci 14.0 on  end # xHCI Controller
 			device pci 15.0 off end # Serial I/O DMA
@@ -69,10 +71,13 @@ chip northbridge/intel/broadwell
 					device pnp 4e.6 off end		# CIR
 					device pnp 4e.7 off end		# GPIO 6789
 					device pnp 4e.8 off end		# WDT1 / GPIO 01A
+					device pnp 4e.308 off end	# GPIOBASE (unused)
 					device pnp 4e.9 off end		# GPIO 1234567
 					device pnp 4e.a off end		# ACPI
 					device pnp 4e.b on		# Hardware monitor + front LED (0xa00)
 						io 0x60 = 0xa00
+						io 0x62 = 0		# 2nd HWM window unused
+						irq 0x70 = 0		# no HWM alert IRQ
 					end
 					device pnp 4e.d off end		# VID
 					device pnp 4e.e off end		# CIR wakeup
