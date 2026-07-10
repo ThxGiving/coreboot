@@ -8,6 +8,7 @@
 #include <device/pci_def.h>
 #include <memory_info.h>
 #include <mrc_cache.h>
+#include <smbios.h>
 #include <string.h>
 #include <soc/pei_data.h>
 #include <soc/pei_wrapper.h>
@@ -164,6 +165,54 @@ static void setup_sdram_meminfo(struct pei_data *pei_data)
 		dimm->mod_id =  pei_dimm->mod_id;
 		dimm->mod_type = pei_dimm->mod_type;
 		dimm->bus_width = pei_dimm->bus_width;
+	}
+
+	/*
+	 * Some mrc.bin builds return an empty pei_data->meminfo, which leaves
+	 * SMBIOS type 16/17 (and the payload's RAM display) blank. Synthesize
+	 * the DIMM inventory from the MC's MAD_DIMM registers. The field decode
+	 * matches coreboot's Haswell decoder (nb/intel/haswell/raminit_shared.c
+	 * and the native-raminit union mad_dimm_reg), whose MCHBAR map this file
+	 * already imports via soc/systemagent.h.
+	 */
+	if (mem_info->dimm_cnt == 0) {
+		/* Data rate from the MPLL ratio, as report_memory_config() does. */
+		const u16 freq = DIV_ROUND_CLOSEST(mchbar_read32(MC_BIOS_DATA) * 13333 * 2, 100);
+		/* DDR3 vs LPDDR3 is a board build-time property, not in MAD_DIMM. */
+		const u8 ddr_type = CONFIG(BROADWELL_LPDDR3) ? MEMORY_TYPE_LPDDR3
+							     : MEMORY_TYPE_DDR3;
+		u8 cnt = 0;
+
+		for (int ch = 0; ch < NUM_CHANNELS; ch++) {
+			const u32 ch_conf = mchbar_read32(MAD_DIMM(ch));
+			/* [7:0] = DIMM_A size, [15:8] = DIMM_B size, unit 256 MiB */
+			const u32 size_mb[NUM_SLOTS] = {
+				((ch_conf >> 0) & 0xff) * 256,
+				((ch_conf >> 8) & 0xff) * 256,
+			};
+			/* bit17/bit18 = DIMM_A/DIMM_B dual-rank (1 => 2 ranks) */
+			const u8 dual[NUM_SLOTS] = {
+				(ch_conf >> 17) & 1,
+				(ch_conf >> 18) & 1,
+			};
+
+			for (int slot = 0; slot < NUM_SLOTS; slot++) {
+				if (!size_mb[slot] || cnt >= DIMM_INFO_TOTAL)
+					continue;
+
+				struct dimm_info *dimm = &mem_info->dimm[cnt++];
+				dimm->dimm_size = size_mb[slot];
+				dimm->ddr_type = ddr_type;
+				dimm->ddr_frequency = freq;
+				dimm->rank_per_dimm = dual[slot] ? 2 : 1;
+				dimm->channel_num = ch;
+				dimm->dimm_num = slot;
+				dimm->bus_width = MEMORY_BUS_WIDTH_64;
+			}
+		}
+
+		mem_info->dimm_cnt = cnt;
+		printk(BIOS_DEBUG, "meminfo: synthesized %u DIMM(s) from MC registers\n", cnt);
 	}
 }
 
