@@ -172,6 +172,7 @@ EliteBook 820 G2 <hp/elitebook_820_g2.md>
 DG43GT <intel/dg43gt.md>
 DQ67SW <intel/dq67sw.md>
 KBLRVP11 <intel/kblrvp11.md>
+NUC5i5RYB <intel/nuc5i5ryb.md>
 ```
 
 ## Kontron
