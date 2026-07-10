@@ -32,7 +32,7 @@ Device (MCHC)
 // Current Resource Settings
 Name (MCRS, ResourceTemplate()
 {
-	// Bus Numbers
+	// Full range; _CRS narrows _MAX/_LEN to the ECAM-backed buses.
 	WordBusNumber (ResourceProducer, MinFixed, MaxFixed, PosDecode,
 			0x0000, 0x0000, 0x00ff, 0x0000, 0x0100,,, PB00)
 
@@ -152,6 +152,15 @@ Name (MCRS, ResourceTemplate()
 
 Method (_CRS, 0, Serialized)
 {
+	// Per PCI Firmware Spec the _CRS bus range must match the ECAM coverage;
+	// keep it equal to MCFG end_bus (CONFIG_ECAM_MMCONF_BUS_NUMBER - 1).
+	// Over-declaring makes Linux (pci_mmconfig_insert) log "ECAM ... only
+	// partially covers this bridge".
+	CreateWordField (MCRS, ^PB00._MAX, BMAX)
+	CreateWordField (MCRS, ^PB00._LEN, BLEN)
+	BLEN = CONFIG_ECAM_MMCONF_BUS_NUMBER
+	BMAX = BLEN - 1
+
 	// Find PCI resource area in MCRS
 	CreateDwordField (MCRS, ^PM01._MIN, PMIN)
 	CreateDwordField (MCRS, ^PM01._MAX, PMAX)
