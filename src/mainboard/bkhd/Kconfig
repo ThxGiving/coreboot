@@ -2,7 +2,16 @@
 
 if VENDOR_BKHD
 
-source "src/mainboard/bkhd/1264np_12_4l/Kconfig.name"
-source "src/mainboard/bkhd/1264np_12_4l/Kconfig"
+choice
+	prompt "Mainboard model"
+
+source "src/mainboard/bkhd/*/Kconfig.name"
+
+endchoice
+
+source "src/mainboard/bkhd/*/Kconfig"
+
+config MAINBOARD_VENDOR
+	default "BKHD"
 
 endif # VENDOR_BKHD

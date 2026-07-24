@@ -6,6 +6,7 @@ config BOARD_SPECIFIC_OPTIONS
 	def_bool y
 	select AZALIA_USE_LEGACY_VERB_TABLE
 	select BOARD_ROMSIZE_KB_16384
+	select SMBIOS_TYPE41_PROVIDED_BY_DEVTREE
 	select DRIVERS_OPTION_CFR_ENABLED if PAYLOAD_EDK2 && SMMSTORE
 	select FSP_TYPE_IOT
 	select HAVE_ACPI_TABLES
@@ -22,9 +23,6 @@ config BOARD_SPECIFIC_OPTIONS
 
 config MAINBOARD_DIR
 	default "bkhd/1264np_12_4l"
-
-config MAINBOARD_VENDOR
-	default "BKHD"
 
 config INTEL_GMA_VBT_FILE
 	default "src/mainboard/bkhd/1264np_12_4l/data.vbt"
