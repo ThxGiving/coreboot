@@ -5,15 +5,8 @@
 #include <intelblocks/cfr.h>
 #include <soc/cfr.h>
 
-/*
- * CPU package power-limit overrides, in watts. Read at runtime by
- * src/soc/intel/common/block/power_limit/power_limit.c via get_uint_option(),
- * with the devicetree values (15 W PL1 / 20 W PL2) as the fallback. So when the
- * option is left unset the board runs at 15/20 W; picking a wattage overrides
- * it; picking "SoC default" (0) reverts to the Alder Lake-N silicon TDP (~6 W
- * PL1, ~7.5 W PL2). Requires an option backend (USE_UEFI_VARIABLE_STORE).
- * Lowering PL1 also smooths current transients (di/dt).
- */
+/* CPU package power-limit overrides (W), read by the SoC power_limit driver;
+   devicetree 15/20 W is the fallback, "SoC default" (0) reverts to silicon TDP. */
 static const struct sm_object cpu_pl1 = SM_DECLARE_ENUM({
 	.opt_name	= "tdp_pl1_override",
 	.ui_name	= "CPU PL1 sustained power",
@@ -65,14 +58,8 @@ static const struct sm_object boot_beep = SM_DECLARE_BOOL({
 	.default_value	= true,
 });
 
-/*
- * What the framebuffer console shows during boot - only when the separate,
- * optional generic framebuffer console feature is built in (CONSOLE_FRAMEBUFFER,
- * github.com/ThxGiving/coreboot-framebuffer-console). The board does not depend
- * on it; this option only appears when it is enabled. Read by that module via
- * get_uint_option("fb_console", ...). The boot log is always available via
- * cbmem -c and the serial console regardless.
- */
+/* Framebuffer-console boot screen; only present when the optional
+   CONSOLE_FRAMEBUFFER feature is built in. */
 #if CONFIG(CONSOLE_FRAMEBUFFER)
 static const struct sm_object fb_console = SM_DECLARE_ENUM({
 	.opt_name	= "fb_console",
@@ -90,14 +77,9 @@ static const struct sm_object fb_console = SM_DECLARE_ENUM({
 });
 #endif
 
-/*
- * Per-port Wake-on-LAN for the four discrete Intel i226-V NICs (PCIe root
- * ports 1c.0/1c.3/1c.6/1d.0 = ACPI RP01/RP04/RP07/RP09). Read at runtime by
- * mainboard_fill_ssdt() in mainboard.c, which emits the ACPI _PRW wake source
- * for each enabled port. With _PRW present the OS can arm a Wake-on-LAN magic
- * packet to resume from S5/sleep; the NIC's own WoL (ethtool wol g, the igc
- * default) must also be on. Requires an option backend (USE_UEFI_VARIABLE_STORE).
- */
+/* Per-port Wake-on-LAN for the four i226-V NICs (RP01/04/07/09).
+   mainboard_fill_ssdt() emits the ACPI _PRW per enabled port; the NIC's own
+   WoL (ethtool wol g) must also be on. */
 static const struct sm_object wol_lan1 = SM_DECLARE_BOOL({
 	.opt_name	= "wol_lan1",
 	.ui_name	= "Wake on LAN - LAN1 (1c.0)",
@@ -131,31 +113,27 @@ static const struct sm_object wol_lan4 = SM_DECLARE_BOOL({
 });
 
 /*
- * SaGv (System Agent Geyserville) - dynamic DRAM frequency/voltage switching.
- * Read at runtime by romstage_fsp_params.c (mainboard_memory_init_params) via
- * get_uint_option("sagv", ...), overriding the devicetree value. The board
- * default is Fixed Point 3: the top frequency point pinned, full bandwidth with
- * NO runtime transitions - chosen for stability on marginal RAM (random
- * corruption/segfaults were seen with full dynamic switching). "Enabled" allows
- * all switching; "Disabled" forces the lowest point. Requires an option backend.
- * Values match the SoC enum (SaGv_Disabled=0 .. SaGv_FixedPoint3=4, Enabled=5).
+ * SaGv (System Agent Geyserville) DRAM frequency switching, read by
+ * romstage_fsp_params.c via get_uint_option("sagv", ...). Default Enabled
+ * (dynamic): the earlier instability was a specific DDR5 module brand, not the
+ * board, so no fixed point is forced. Enum: Disabled=0 .. FixedPoint3=4,
+ * Enabled=5.
  */
 static const struct sm_object sagv = SM_DECLARE_ENUM({
 	.opt_name	= "sagv",
 	.ui_name	= "SaGv (DRAM frequency switching)",
-	.ui_helptext	= "System Agent Geyserville. Fixed Point 3 (default) pins the top "
-			  "DRAM frequency: full bandwidth, no runtime transitions - the "
-			  "stable choice on marginal RAM. Enabled allows dynamic switching; "
-			  "Disabled forces the lowest point. If you see random instability, "
-			  "keep Fixed Point 3 (or try Disabled for maximum margin).",
-	.default_value	= 4,	/* SaGv_FixedPoint3 */
+	.ui_helptext	= "System Agent Geyserville. Enabled (default) allows dynamic DRAM "
+			  "frequency switching. On marginal RAM you can pin a Fixed Point "
+			  "(3 = top frequency, full bandwidth) or force Disabled (lowest "
+			  "point) for maximum margin.",
+	.default_value	= 5,	/* SaGv_Enabled */
 	.values		= (const struct sm_enum_value[]) {
 				{ "Disabled (lowest point)",	0 },
 				{ "Fixed Point 0 (low)",	1 },
 				{ "Fixed Point 1",		2 },
 				{ "Fixed Point 2",		3 },
-				{ "Fixed Point 3 (top, default)", 4 },
-				{ "Enabled (dynamic switching)", 5 },
+				{ "Fixed Point 3 (top)",	4 },
+				{ "Enabled (dynamic, default)",	5 },
 				SM_ENUM_VALUE_END		},
 });
 
@@ -174,17 +152,9 @@ static const struct sm_object wake_on_usb = SM_DECLARE_BOOL({
 	.default_value	= true,
 });
 
-/*
- * CPU-fan profile. Picks one of three IT8625E SmartGuardian curves for the
- * single CPU_FAN header (FAN1 / pwm1). Read at runtime by mainboard_init() in
- * mainboard.c, which patches the IT8625E FAN1.smart config (off/start/full
- * temperature, start duty and slope) before the env_ctrl driver programs the
- * chip. The devicetree carries the "Normal" curve as the baseline; this option
- * overrides it. Requires an option backend (USE_UEFI_VARIABLE_STORE).
- *   Silent      - fan stays off longest, ramps gently (quietest, runs warmer)
- *   Normal      - the tuned default (off 45C, gentle to full at 85C)
- *   Performance - fan on early and stronger (coolest, audible sooner)
- */
+/* CPU-fan profile: picks an IT8625E SmartGuardian curve for FAN1 (CPU_FAN).
+   mainboard_init() patches FAN1.smart from the preset; devicetree "Normal" is
+   the baseline. */
 static const struct sm_object fan_profile = SM_DECLARE_ENUM({
 	.opt_name	= "fan_profile",
 	.ui_name	= "CPU fan profile",
@@ -201,17 +171,9 @@ static const struct sm_object fan_profile = SM_DECLARE_ENUM({
 				SM_ENUM_VALUE_END		},
 });
 
-/*
- * Firmware boot watchdog. Arms the IT8625E hardware watchdog late in coreboot
- * (just before the payload is launched) with the selected timeout. If the
- * payload, boot loader or OS hangs before the OS watchdog daemon takes over
- * (Proxmox watchdog-mux opening /dev/watchdog0 = it87_wdt), the IT8625E resets
- * the board (KRST), so a wedged headless box self-recovers. Once the OS driver
- * opens the watchdog it re-arms with its own timeout and keeps petting, so this
- * only covers the pre-OS-daemon window. Default Off (opt in deliberately - too
- * short a timeout against a slow boot would reset-loop). Read at runtime by the
- * BS_PAYLOAD_BOOT hook in mainboard.c. Requires an option backend.
- */
+/* Firmware boot watchdog: arms the IT8625E HW watchdog before the payload
+   (mainboard.c BS_PAYLOAD_BOOT hook). Default Off (opt-in; too short a timeout
+   reset-loops a slow boot). Covers the window until the OS watchdog takes over. */
 static const struct sm_object fw_watchdog = SM_DECLARE_ENUM({
 	.opt_name	= "fw_watchdog",
 	.ui_name	= "Firmware boot watchdog",

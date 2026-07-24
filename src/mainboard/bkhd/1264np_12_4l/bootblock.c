@@ -10,18 +10,9 @@
 #define GPIO_DEV PNP_DEV(0x2e, IT8625E_GPIO)
 
 /*
- * User GPIO header (2x5, 2.0 mm pitch). The board manual labels the eight
- * usable pins GPIO1..GPIO8; they map to the IT8625E Simple I/O pins below
- * (verified against the stock BIOS "GPIO for SIO" setup page):
- *
- *   GPIO1=GP22  GPIO2=GP23  GPIO3=GP36  GPIO4=GP37
- *   GPIO5=GP56  GPIO6=GP57  GPIO7=GP60  GPIO8=GP61
- *
- * Route them to Simple I/O mode as inputs (safe power-on default, no
- * contention). Direction and level are then fully controlled at runtime
- * from the OS: the mainline gpio-it87 driver exposes the pins as a gpiochip
- * at Simple I/O base 0xa00 (devicetree LDN 0x07), so they can be
- * reconfigured any time without reflashing.
+ * User GPIO header (GPIO1..8) -> IT8625E Simple I/O pins GP22/23/36/37/56/57/
+ * 60/61. Set as inputs (safe default); the OS gpio-it87 driver (Simple I/O
+ * base 0xa00, LDN 0x07) reconfigures them at runtime.
  */
 static const u8 user_gpios[] = { 22, 23, 36, 37, 56, 57, 60, 61 };
 

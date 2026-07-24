@@ -8,16 +8,9 @@
 #include "beep.h"
 
 /*
- * The front-panel buzzer is a PASSIVE piezo on GPP_H4. This was determined
- * empirically by sweeping the SoC GPIOs from the OS (libgpiod) and bit-banging
- * each output pad until the buzzer sounded - GPP_H4 (gpiochip line 164,
- * pin GPPC_H_4) is the one. A passive buzzer has no internal oscillator, so it
- * must be toggled at the audio frequency to make a tone.
- *
- * Note: this board does NOT use the legacy PC speaker (PIT + port 0x61). Its
- * SPKR native function lives on GPP_B14, but that pad is wired to the SATA
- * activity LED here, not to the buzzer - so the PC-speaker path stays silent.
- * The stock AMI firmware also drives the buzzer via this GPIO, not via SPKR.
+ * Passive piezo buzzer on GPP_H4 (no oscillator -> toggle at the tone
+ * frequency). Not the legacy PC speaker: the SPKR pad (GPP_B14) drives the
+ * SATA activity LED here. Stock also beeps via this GPIO.
  */
 static const struct pad_config buzzer_pad[] = {
 	PAD_CFG_GPO(GPP_H4, 0, DEEP),	/* passive buzzer, idle low */

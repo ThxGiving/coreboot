@@ -16,25 +16,10 @@
 #include "beep.h"
 
 /*
- * Set up IT8625E EC temperature monitoring the way the stock firmware does -
- * three things the common env_ctrl driver does not do for this chip (env_ctrl
- * only configures the PECI host in THERMAL_PECI mode, but stock keeps TMPIN1 in
- * diode mode and routes it to PECI via the new temp-source register instead):
- *
- *  - Register 0x0c bits[5:4] (write 0x30) edge-trigger the temperature ADC.
- *    env_ctrl leaves 0x0c at 0x07, so without this the channels read -128 C.
- *  - The EC PECI host: the EXTEMP "GetTemp" registers 0x89/0x8a/0x8b/0x8c, the
- *    EXTEMP control 0x8e and the PECI interface select 0x0a. Without these the
- *    PECI transaction never runs and TMPIN1 is frozen at a fixed value that
- *    does not track the die at all.
- *  - The bank-2 temperature-source register 0x21d=0x04 (register 0x1d with the
- *    bank bits[7:5] of register 0x06 set to 2) routes TMPIN1 (CPU) to PECI.
- *
- * All verified live against the stock firmware: with all three, TMPIN1 reads
- * the die temperature (~coretemp) and tracks load; dropping the PECI host
- * freezes it, dropping 0x0c gives -128, dropping 0x21d reads a cool remote
- * diode. 0x06/0x0a/0x0b mirror the stock dump. EC HWM base = 0xa30 (devicetree
- * LDN4 io0); index/data ports are base+5 / base+6.
+ * Program the IT8625E EC like stock: edge-trigger the temp ADC (0x0c=0x30),
+ * enable the EC PECI host (EXTEMP GetTemp 0x89-0x8e) and route TMPIN1 (CPU)
+ * to PECI via bank-2 reg 0x21d=0x04. env_ctrl does none of this, so without
+ * it TMPIN1 reads -128/frozen. EC HWM base 0xa30, index/data = base+5/base+6.
  */
 #define EC_HWM_BASE	0xa30
 static void it8625e_start_temp_adc(void)
@@ -62,10 +47,7 @@ static void it8625e_start_temp_adc(void)
 
 /*
  * CPU-fan profile (CFR "fan_profile", default Normal). Patch the IT8625E FAN1
- * SmartGuardian curve from the selected preset. This runs in the mainboard
- * chip_ops->init (dev_initialize_chips), which is BEFORE the IT8625E device
- * .init (it8625e_init -> ite_ec_init) reads the same config struct and programs
- * the chip - so the patch lands. fan[0] = FAN1 = the one CPU_FAN header (J2G1).
+ * (CPU_FAN, J2G1) SmartGuardian curve before the IT8625E .init reads it.
  */
 static void bkhd_apply_fan_profile(void)
 {
@@ -101,12 +83,8 @@ static void mainboard_init(void *chip_info)
 {
 	gpio_configure_pads(gpio_table, ARRAY_SIZE(gpio_table));
 
-	/*
-	 * Wake on USB (CFR "wake_on_usb", default on). Set the per-port USB2/USB3
-	 * wake-enable bitmaps now (BS_DEV_INIT) - the SoC copies them into GNVS
-	 * u2we/u3we later at ACPI table generation, and the XHCI UWES method arms
-	 * the wake from them. The devicetree leaves these at 0; override here.
-	 */
+	/* Wake on USB (CFR "wake_on_usb", default on): set the per-port wake
+	   bitmaps (devicetree leaves 0); SoC copies them to GNVS u2we/u3we. */
 	config_t *cfg = (config_t *)config_of_soc();
 	const uint16_t usb_wake = get_uint_option("wake_on_usb", 1) ? 0xffff : 0;
 	cfg->usb2_wake_enable_bitmap = usb_wake;
@@ -125,14 +103,9 @@ static void mainboard_final(void *chip_info)
 }
 
 /*
- * Per-port Wake-on-LAN. Emit the PCIe-PME _PRW wake source on each i226 NIC
- * root port (1c.0/1c.3/1c.6/1d.0 = ACPI RP01/RP04/RP07/RP09) whose CFR
- * "Wake on LAN - LANx" option is enabled (default on, see cfr.c). Generated
- * here rather than statically in dsdt.asl so the CFR toggle can drop the _PRW
- * per port - without _PRW the OS registers no wake source for that NIC and a
- * magic packet cannot resume the box. GPE0_PME_B0 is the shared PCI Express
- * PME GPE (same idiom as soc/.../acpi/pch_glan.asl for the PCH LAN). The NIC's
- * own WoL (ethtool wol g, the igc default) must also be on.
+ * Per-port Wake-on-LAN (CFR "wol_lanX", default on): emit the PCIe-PME _PRW
+ * on each i226 NIC root port (RP01/04/07/09). Done here, not in dsdt.asl, so
+ * the CFR toggle can drop it per port. The NIC's own WoL must also be on.
  */
 static void mainboard_fill_ssdt(const struct device *dev)
 {
@@ -159,18 +132,10 @@ static void mainboard_fill_ssdt(const struct device *dev)
 }
 
 /*
- * Firmware boot watchdog (CFR "fw_watchdog", default Off). Arm the IT8625E
- * hardware watchdog just before the payload is launched, with the CFR-selected
- * timeout in seconds. If the payload / boot loader / OS hangs before the OS
- * watchdog daemon (it87_wdt via Proxmox watchdog-mux) opens /dev/watchdog0 and
- * takes over petting, the timer expires and the IT8625E hard-resets the board
- * (KRST) - the same reset action the in-tree it87_wdt driver uses (HW-proven to
- * reset this board). The WDT registers live in the SuperIO GPIO logical device:
- *   0x71 WDTCTRL = 0x00  (timer only; no keyboard/mouse/CIR/GP interrupt source)
- *   0x72 WDTCFG  = 0xC0  (bit7 TOV1 = count in seconds, bit6 KRST = system reset)
- *   0x73/0x74    = timeout value (LSB/MSB); writing it (re)loads and starts.
- * Arming this late (BS_PAYLOAD_BOOT) gives the whole timeout budget to the
- * payload + OS handover rather than spending it on coreboot's own boot.
+ * Firmware boot watchdog (CFR "fw_watchdog", default Off, seconds). Arm the
+ * IT8625E HW watchdog at BS_PAYLOAD_BOOT; if the payload/OS hangs before Linux
+ * it87_wdt opens /dev/watchdog0, it expires and hard-resets the board (KRST).
+ * WDT registers live in the SuperIO GPIO LDN (see writes below).
  */
 #define SIO_IDX	0x2e	/* SuperIO config index port */
 #define SIO_DAT	0x2f	/* SuperIO config data port  */
@@ -225,20 +190,7 @@ void mainboard_silicon_init_params(FSP_S_CONFIG *params)
 	/* Disabling DMI ASPM, fixes wonky NVME */
 	params->PchLegacyIoLowLatency = 1;
 
-	/*
-	 * Cap the package C-state at C6. Deep package states (PC8/PC10) trigger
-	 * SYS_PWROK resets on this board; C6 keeps the power saving but avoids
-	 * the problematic deep states. Firmware-side, OS-independent. This hook
-	 * runs after the SoC default (LIMIT_AUTO), so it cleanly overrides it
-	 * without any SoC code changes.
-	 */
-	params->PkgCStateLimit = LIMIT_C6;
-
-	/*
-	 * Force CDCLK to 192 MHz (UPD value 0). FSP auto-selects the maximum
-	 * (652.8 MHz) which is ~3.4x what i915 uses for this 1080p HDMI mode and
-	 * appears to over-drive the display data path (scrambled, fast-scrolling
-	 * scanout). i915 runs this exact board/mode at 192 MHz, so match it.
-	 */
+	/* CDCLK = 192 MHz (UPD 0). FSP auto picks 652.8 MHz (~3.4x what i915 uses)
+	   which over-drives the HDMI data path -> scrambled scanout. Match i915. */
 	params->CdClock = 0;
 }
