@@ -6,6 +6,7 @@
 #include <device/device.h>
 #include <device/pci.h>
 #include <device/pci_ids.h>
+#include <drivers/usb/acpi/chip.h>
 #include <intelblocks/cnvi.h>
 #include <soc/cnvi.h>
 #include <soc/pcr_ids.h>
@@ -489,6 +490,63 @@ static const struct pci_driver pch_cnvi_wifi __pci_driver = {
 static const char *cnvi_bt_acpi_name(const struct device *dev)
 {
 	return "CNVB";
+}
+
+/*
+ * Called from acpi_device_intel_bt()'s _RST in drivers/usb/acpi/intel_bluetooth.c
+ * under CONFIG(SOC_INTEL_COMMON_BLOCK_CNVI) when the Bluetooth has no reset GPIO.
+ *
+ * A CNVi Bluetooth that reaches the host as a USB device has no PCI function,
+ * so the PCI-based reset in cnvb_fill_ssdt() cannot apply and there is no reset
+ * GPIO. is_intel_bluetooth's _RST calls this instead, emitting a Platform-Level
+ * Device Reset (PLDR) through the P2SB sideband abort-PLDR register, serialized
+ * against the Wi-Fi via the shared \_SB.PCI0.CNMT mutex (emitted by
+ * acpi_device_intel_bt_common()):
+ *
+ *	If ((Acquire (\_SB.PCI0.CNMT, 1000) == 0)) {
+ *		If (((\_SB.PCI0.PCRR (PID_CNVI, CNVI_ABORT_PLDR) & CNVI_ABORT_REQUEST) == 0)) {
+ *			\_SB.PCI0.PCRO (PID_CNVI, CNVI_ABORT_PLDR, CNVI_ABORT_REQUEST | CNVI_ABORT_ENABLE)
+ *			Sleep (50)
+ *		}
+ *		Release (\_SB.PCI0.CNMT)
+ *	}
+ */
+void acpi_device_intel_bt_pldr_reset(void)
+{
+	/* Local0 = Acquire(\_SB.PCI0.CNMT, 1000) */
+	acpigen_write_store();
+	acpigen_write_acquire("\\_SB.PCI0.CNMT", 1000);
+	acpigen_emit_byte(LOCAL0_OP);
+
+	acpigen_write_if_lequal_op_int(LOCAL0_OP, 0);
+	{
+		/* Local0 = PCRR(PID_CNVI, CNVI_ABORT_PLDR) & CNVI_ABORT_REQUEST */
+		acpigen_write_store();
+		acpigen_emit_namestring("\\_SB.PCI0.PCRR");
+		acpigen_write_integer(PID_CNVI);
+		acpigen_write_integer(CNVI_ABORT_PLDR);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		acpigen_emit_byte(AND_OP);
+		acpigen_emit_byte(LOCAL0_OP);
+		acpigen_write_integer(CNVI_ABORT_REQUEST);
+		acpigen_emit_byte(LOCAL0_OP);
+
+		/* If no abort is already pending, request the PLDR. */
+		acpigen_write_if_lequal_op_int(LOCAL0_OP, 0);
+		{
+			acpigen_emit_namestring("\\_SB.PCI0.PCRO");
+			acpigen_write_integer(PID_CNVI);
+			acpigen_write_integer(CNVI_ABORT_PLDR);
+			acpigen_write_integer(CNVI_ABORT_REQUEST | CNVI_ABORT_ENABLE);
+
+			acpigen_write_sleep(50);
+		}
+		acpigen_pop_len();
+
+		acpigen_write_release("\\_SB.PCI0.CNMT");
+	}
+	acpigen_pop_len();
 }
 
 static void cnvb_fill_ssdt(const struct device *dev)

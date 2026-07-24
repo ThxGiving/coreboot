@@ -43,10 +43,7 @@ static void set_reset_delay(void *arg)
 
 static void set_reset_method(void *arg)
 {
-	/*
-	 * coreboot only supports WDISABLE2 (GPIO). Linux sends type in Arg3[2].
-	 * Accept and return success - _RST already implements GPIO toggle.
-	 */
+	/* _RST does the reset itself (GPIO toggle or CNVi PLDR); accept. */
 	acpigen_write_return_singleton_buffer(0x01);
 }
 
@@ -115,11 +112,16 @@ void acpi_device_intel_bt(const struct acpi_gpio *enable_gpio,
  *	}
  */
 
+	/* btintel arms _PRR/_RST recovery only if the _DSM reports reset
+	   support, so advertise it whenever _RST resets: GPIO, or CNVi PLDR. */
+	const bool reset_available = reset_gpio->pin_count ||
+		CONFIG(SOC_INTEL_COMMON_BLOCK_CNVI);
+
 	struct dsm_uuid uuid_callbacks[] = {
 		DSM_UUID("aa10f4e0-81ac-4233-abf6-3b2ac50e28d9",
-			reset_gpio->pin_count ?
+			reset_available ?
 				reset_supported : reset_unsupported,
-			reset_gpio->pin_count ?
+			reset_available ?
 				ARRAY_SIZE(reset_supported) : ARRAY_SIZE(reset_unsupported),
 			NULL),
 	};
@@ -226,6 +228,19 @@ void acpi_device_intel_bt(const struct acpi_gpio *enable_gpio,
 				}
 				acpigen_pop_len();
 			}
+#if CONFIG(SOC_INTEL_COMMON_BLOCK_CNVI)
+			else {
+				/*
+				 * No reset GPIO: a CNVi-over-USB Bluetooth is
+				 * reset through the sideband PLDR, emitted by the
+				 * CNVi block (soc/intel/common/block/cnvi). The
+				 * call is guarded so non-CNVi boards using this
+				 * driver do not pull in an unresolved symbol -
+				 * same idiom as wifi/generic/acpi.c's cnvi code.
+				 */
+				acpi_device_intel_bt_pldr_reset();
+			}
+#endif
 		}
 		acpigen_pop_len();
 	}

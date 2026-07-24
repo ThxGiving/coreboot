@@ -95,4 +95,14 @@ void acpi_device_intel_bt(const struct acpi_gpio *enable_gpio,
 void acpi_device_intel_bt_common(const struct acpi_gpio *enable_gpio,
 				 const struct acpi_gpio *reset_gpio);
 
+/*
+ * Emit the body of a Bluetooth _RST method that resets an Intel CNVi
+ * Bluetooth reaching the host as a USB device (no PCI function, no reset
+ * GPIO) via a Platform-Level Device Reset (PLDR) over the P2SB sideband.
+ * The default is a no-op; SoCs with a CNVi block override it. Must be called
+ * within a _RST method, with the \_SB.PCI0.CNMT mutex present (emitted by
+ * acpi_device_intel_bt_common()).
+ */
+void acpi_device_intel_bt_pldr_reset(void);
+
 #endif /* __USB_ACPI_CHIP_H__ */
