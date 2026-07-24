@@ -13,10 +13,6 @@ chip soc/intel/alderlake
 	register "pmc_gpe0_dw1" = "GPP_D"
 	register "pmc_gpe0_dw2" = "GPP_E"
 
-	# CNVi Bluetooth core (BT reaches the host over USB2; Wi-Fi alone
-	# does not enable it)
-	register "cnvi_bt_core" = "true"
-
 	device domain 0 on
 		device ref igpu on
 			# External HDMI + DP only, no embedded panel.
@@ -202,6 +198,8 @@ chip soc/intel/alderlake
 		# M.2 2230 E-key CNVi (AX211/AX201). A discrete PCIe card would
 		# need pcie_rp1 + a spare clock (all 5 are used by NICs + NVMe).
 		device ref cnvi_wifi on
+			# BT core reaches the host over USB2; Wi-Fi alone doesn't enable it
+			register "cnvi_bt_core" = "true"
 			smbios_slot_desc "SlotTypeM2Socket1_SD" "SlotLengthOther" "M.2/E 2230 (CNVi WiFi/BT)" "SlotDataBusWidth1X"
 		end
 
@@ -238,6 +236,11 @@ chip soc/intel/alderlake
 				device pnp 2e.4 on	# Environment Controller (HWM)
 					io 0x60 = 0xa30
 					io 0x62 = 0xa20
+					# Required, not cosmetic: the IT8625E powers up with its
+					# interrupt on IRQ 9, which is the ACPI SCI. Run fanless,
+					# the HWM then asserts a fan fault and drives IRQ 9
+					# continuously with no status bit to ack, and Linux masks
+					# the SCI. The sensors are polled, so route no IRQ.
 					irq 0x70 = 0x00
 				end
 				device pnp 2e.7 on	# GPIO (user header)
